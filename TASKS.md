@@ -59,6 +59,20 @@ after ~100s; a scout takes 255-317s. Measured before the fix: a request to
 the live site hung for **363s and returned no status at all**. Every fresh
 scout from the browser failed this way — only cached reports worked.
 
+## Sprint 8 — Recency actually counts
+- [x] Parse the date formats evidence really uses (ISO, "March 2026", bare year)
+- [x] Feed evidence dates into the scoring prompt — it asked the model to
+      weight recency while showing it no dates at all
+- [x] Weight the overall score by a bounded recency factor (0.70-1.05)
+- [x] Show the adjustment in the report and the UI, never silently
+- [x] Prefer a claim's event date over its article's publication date
+
+Recency adjusts the *overall* score, not the four dimensions: those carry the
+model's own written reasoning, and silently contradicting it would read as a
+bug. Density is counted as an absolute number of recent developments rather
+than a share of the total, so a company with ten years of coverage isn't
+punished for being well documented.
+
 ## Known constraint — Gemini free tier quota
 A full scout costs ~6 Gemini calls (1 resolver + ~3 extractor batches +
 1 analyst + 1 scorer). The free tier allows 20 calls/day, so roughly
@@ -73,8 +87,7 @@ Two consequences:
 ## Remaining from PRD — the real gap
 - [ ] Run the 20-company evaluation set (eval/companies.json)
 - [ ] Populate eval/failure_log.md with observed failures
-- [ ] Make recency actually count in scoring (PRD principle #5 is stated
-      in prompts but never weighted)
+- [x] Make recency actually count in scoring (PRD principle #5)
 
 The evaluation is the largest outstanding item. Until it runs, PRD success
 criteria 2, 4, 6 and 9 are unverified — including "can correctly say some

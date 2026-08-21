@@ -126,14 +126,28 @@ class OpportunityScores(BaseModel):
     research_score: float = Field(ge=0, le=10)
     research_reasoning: str
 
+    # PRD principle #5: recent developments count for more. This is applied to
+    # the overall score rather than to the four dimensions, because those carry
+    # the model's own reasoning and silently contradicting it would be worse
+    # than not adjusting at all. Defaults to 1.0 so briefs cached before this
+    # existed still load and score exactly as they did.
+    recency_factor: float = Field(default=1.0, ge=0.5, le=1.5)
+    recency_note: str = ""
+
     @computed_field
     @property
-    def overall_score(self) -> float:
+    def base_score(self) -> float:
+        """The four dimensions averaged, before recency is applied."""
         return round(
             (self.story_score + self.case_study_score
              + self.outreach_score + self.research_score) / 4,
             1,
         )
+
+    @computed_field
+    @property
+    def overall_score(self) -> float:
+        return round(min(10.0, max(0.0, self.base_score * self.recency_factor)), 1)
 
     @computed_field
     @property

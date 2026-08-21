@@ -144,6 +144,22 @@ function renderBrief(brief) {
     badge.textContent = recommendation;
     badge.className = 'score-badge ' + getBadgeClass(recommendation);
 
+    // Explain any recency adjustment, so a score that differs from the plain
+    // average of the four dimensions doesn't look like an error.
+    const recencyEl = document.getElementById('score-recency');
+    if (recencyEl) {
+        if (scores && scores.recency_factor && scores.recency_factor !== 1) {
+            const dir = scores.recency_factor > 1 ? 'raised' : 'reduced';
+            recencyEl.textContent =
+                `Average of the four dimensions is ${scores.base_score}/10; `
+                + `recency ${dir} it to ${scores.overall_score}/10. `
+                + (scores.recency_note || '');
+            recencyEl.classList.remove('hidden');
+        } else {
+            recencyEl.classList.add('hidden');
+        }
+    }
+
     const meta = [];
     if (company.country) meta.push(company.country);
     if (company.industry) meta.push(company.industry);

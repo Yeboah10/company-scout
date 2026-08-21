@@ -1,5 +1,28 @@
 from backend.models.schemas import CompanyAnalysis, OpportunityScores, ResearchEvidence
 from backend.services.llm import LLMService
+from backend.services.recency import RecencyProfile, build_profile, recency_factor
+
+
+def build_evidence_profile(evidence: ResearchEvidence) -> RecencyProfile:
+    """Collect every date the evidence offers into one recency picture.
+
+    A claim's date_of_event is preferred over its source's publication date:
+    an article written last week about a 2019 funding round is old news, and
+    the publication date would disguise that.
+    """
+    dates: list[str | None] = []
+
+    for claim in evidence.claims:
+        dates.append(claim.date_of_event or claim.source.published_date)
+
+    # Sources with no claim attached still say something about how much recent
+    # material exists about the company at all.
+    claim_urls = {c.source.url for c in evidence.claims}
+    for source in evidence.sources:
+        if source.url not in claim_urls:
+            dates.append(source.published_date)
+
+    return build_profile(dates)
 
 SCORER_SYSTEM_PROMPT = """You are a company opportunity scorer for a research tool focused on African companies.
 
@@ -63,7 +86,10 @@ class CompanyScorer:
         self.llm = llm
 
     def score(self, evidence: ResearchEvidence, analysis: CompanyAnalysis) -> OpportunityScores:
-        prompt = self._build_scoring_prompt(evidence, analysis)
+        profile = build_evidence_profile(evidence)
+        factor, note = recency_factor(profile)
+
+        prompt = self._build_scoring_prompt(evidence, analysis, profile)
         data = self.llm.extract_structured(SCORER_SYSTEM_PROMPT, prompt)
 
         return OpportunityScores(
@@ -75,9 +101,16 @@ class CompanyScorer:
             outreach_reasoning=data["outreach_reasoning"],
             research_score=float(data["research_score"]),
             research_reasoning=data["research_reasoning"],
+            recency_factor=factor,
+            recency_note=note,
         )
 
-    def _build_scoring_prompt(self, evidence: ResearchEvidence, analysis: CompanyAnalysis) -> str:
+    def _build_scoring_prompt(
+        self,
+        evidence: ResearchEvidence,
+        analysis: CompanyAnalysis,
+        profile: RecencyProfile,
+    ) -> str:
         c = evidence.company
         parts = [
             f"Company: {c.name} ({c.country or 'Unknown'})",
@@ -118,5 +151,20 @@ class CompanyScorer:
         low_conf = sum(1 for cl in evidence.claims if cl.confidence.value == "low")
         parts.append(f"")
         parts.append(f"EVIDENCE QUALITY: {high_conf} high-confidence, {med_conf} medium, {low_conf} low")
+
+        # The prompt asks the model to weight recency; without this it was
+        # being asked to do that with no dates in front of it.
+        parts.append(f"")
+        parts.append("EVIDENCE RECENCY:")
+        if profile.newest is not None:
+            parts.append(f"- Most recent dated evidence: {profile.newest.isoformat()}")
+            parts.append(f"- Age of newest evidence: {profile.months_since_newest:.0f} months")
+        else:
+            parts.append("- No dated evidence found")
+        parts.append(f"- Dated items: {profile.dated_count} (undated: {profile.undated_count})")
+        parts.append(
+            f"- From the last 6 months: {profile.within_6_months}; "
+            f"last 12: {profile.within_12_months}; last 24: {profile.within_24_months}"
+        )
 
         return "\n".join(parts)

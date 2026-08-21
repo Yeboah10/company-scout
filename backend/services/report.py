@@ -64,6 +64,17 @@ def brief_to_markdown(brief: CompanyBrief) -> str:
             out.append(f"| {label} | {score}/10 | {clean} |\n")
         out.append("\n")
 
+        # Show the adjustment rather than just its result: a score that moved
+        # for unexplained reasons is worth less than one you can argue with.
+        if scores.recency_factor != 1.0:
+            direction = "raised" if scores.recency_factor > 1 else "reduced"
+            note = (scores.recency_note or "").replace("\n", " ")
+            out.append(
+                f"Average of the four: **{scores.base_score}/10**. "
+                f"Recency {direction} this to **{scores.overall_score}/10** "
+                f"(x{scores.recency_factor:g}). {note}\n\n"
+            )
+
     if analysis.top_priorities:
         out.append("## Top Priorities\n\n")
         for i, p in enumerate(analysis.top_priorities, 1):

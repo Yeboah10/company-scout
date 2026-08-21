@@ -244,6 +244,15 @@ body {
     font-size: 0.9rem;
 }
 
+.score-recency {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border);
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    line-height: 1.5;
+}
+
 /* Tabs */
 .tabs {
     display: flex;
