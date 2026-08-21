@@ -1,0 +1,31 @@
+# Render's free tier spins a service down after 15 minutes of inactivity, and
+# the cold start that follows takes 30-50 seconds behind Render's own holding
+# page. A cheap request keeps it warm.
+#
+# Deliberately not run overnight: the free tier allows 750 instance-hours a
+# month and a 31-day month is 744, so staying awake around the clock would sit
+# right on the ceiling. Roughly 06:00-23:00 UTC costs about 530 hours and
+# leaves comfortable margin.
+#
+# To stop this, delete this file or disable the workflow in the Actions tab.
+name: Keep the service warm
+
+on:
+  schedule:
+    - cron: '*/10 6-22 * * *'
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping the health endpoint
+        run: |
+          code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 90 \
+            https://scout.yeboah.works/health || echo "000")
+          echo "health returned $code"
+          # A cold start can outlast the request that triggered it; the point
+          # is to wake the service, not to assert it answered in time.
+          if [ "$code" != "200" ]; then
+            echo "Service was not ready; it should now be warming up."
+          fi

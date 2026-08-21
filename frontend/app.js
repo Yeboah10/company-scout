@@ -375,19 +375,43 @@ function renderBrief(brief) {
         orSection.classList.add('hidden');
     }
 
-    // Claims
+    // Claims, newest first. Recency drives the score, so the evidence list
+    // should lead with what's current rather than whatever order it came back in.
     const claimsEl = document.getElementById('claims-list');
-    claimsEl.innerHTML = (evidence.claims || []).map(c => `
+    const claims = sortByDateDesc(evidence.claims || [], c => c.date_of_event || c.source?.published_date);
+
+    claimsEl.innerHTML = claims.map((c, i) => {
+        const when = c.date_of_event || c.source?.published_date;
+        return `
         <div class="card">
             <div class="card-body">
-                <span class="confidence ${c.confidence}">${c.confidence}</span>
-                <span style="margin-left:8px">${esc(c.statement)}</span>
-                ${c.date_of_event ? `<br><span class="card-label" style="margin-top:6px;display:inline-block">Date: ${esc(c.date_of_event)}</span>` : ''}
-                <br><span class="card-label">Source:</span> ${esc(c.source.title)}
+                <div class="claim-head">
+                    <span class="confidence ${c.confidence}">${c.confidence}</span>
+                    ${when ? `<span class="claim-date">${esc(formatEvidenceDate(when))}</span>` : '<span class="claim-date undated">undated</span>'}
+                    <button class="copy-claim" type="button" data-claim="${i}" title="Copy this claim">Copy</button>
+                </div>
+                <p class="claim-text">${esc(c.statement)}</p>
+                <span class="card-label">Source:</span> ${esc(c.source.title)}
                 ${c.source.url ? `<br><a href="${esc(c.source.url)}" target="_blank" rel="noopener" class="source-link">${esc(c.source.url)}</a>` : ''}
             </div>
         </div>
-    `).join('');
+        `;
+    }).join('');
+
+    // One listener on the container rather than per card, so re-rendering a
+    // report doesn't leave orphaned handlers behind.
+    claimsEl.onclick = (e) => {
+        const btn = e.target.closest('.copy-claim');
+        if (!btn) return;
+        const claim = claims[Number(btn.dataset.claim)];
+        if (!claim) return;
+        const when = claim.date_of_event || claim.source?.published_date;
+        const text = `"${claim.statement}"`
+            + (when ? `\n(${when})` : '')
+            + `\nSource: ${claim.source.title}`
+            + (claim.source.url ? `\n${claim.source.url}` : '');
+        copyText(text, btn);
+    };
 
     // Sources
     const sources = evidence.sources || [];
@@ -537,6 +561,90 @@ async function loadSharedReport() {
 
 loadSharedReport();
 
+// Only worth showing on the home page; a shared report replaces this view.
+if (!/^\/r\//.test(window.location.pathname)) {
+    loadRecent();
+}
+
+/* ---------- Evidence helpers ---------- */
+
+// Dates arrive in mixed formats ("2026-03-14", "March 2026", "2026"). Anything
+// unparseable sorts last rather than being guessed at.
+function parseEvidenceDate(value) {
+    if (!value) return null;
+    const t = Date.parse(value);
+    if (!Number.isNaN(t)) return t;
+    const year = /^(\d{4})$/.exec(String(value).trim());
+    if (year) return Date.parse(`${year[1]}-01-01`);
+    return null;
+}
+
+function sortByDateDesc(items, getDate) {
+    return [...items].sort((a, b) => {
+        const da = parseEvidenceDate(getDate(a));
+        const db = parseEvidenceDate(getDate(b));
+        if (da === null && db === null) return 0;
+        if (da === null) return 1;
+        if (db === null) return -1;
+        return db - da;
+    });
+}
+
+function formatEvidenceDate(value) {
+    const t = parseEvidenceDate(value);
+    if (t === null) return String(value);
+    const d = new Date(t);
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+}
+
+async function copyText(text, btn) {
+    const original = btn.textContent;
+    try {
+        await navigator.clipboard.writeText(text);
+        btn.textContent = 'Copied';
+    } catch {
+        // Clipboard needs a secure context and permission; never leave the
+        // user with no way to get the text.
+        window.prompt('Copy this:', text);
+        btn.textContent = original;
+        return;
+    }
+    setTimeout(() => { btn.textContent = original; }, 1500);
+}
+
+/* ---------- Recent scouts ---------- */
+
+async function loadRecent() {
+    let data;
+    try {
+        const r = await fetch('/recent');
+        if (!r.ok) return;
+        data = await r.json();
+    } catch {
+        return;  // A missing recent list is not worth an error on screen.
+    }
+
+    const items = (data && data.recent) || [];
+    if (!items.length) return;
+
+    const list = document.getElementById('recent-list');
+    const wrap = document.getElementById('recent');
+    if (!list || !wrap) return;
+
+    list.innerHTML = items.map(item => `
+        <a class="recent-card" href="/r/${encodeURIComponent(item.key)}">
+            <span class="recent-name">${escapeHtml(item.name || item.key)}</span>
+            <span class="recent-sub">
+                ${item.country ? escapeHtml(item.country) : ''}
+                ${item.score != null ? `<span class="recent-score">${escapeHtml(item.score)}/10</span>` : ''}
+            </span>
+        </a>
+    `).join('');
+
+    wrap.classList.remove('hidden');
+}
+
 function escapeHtml(value) {
     const div = document.createElement('div');
     div.textContent = value == null ? '' : String(value);
@@ -548,6 +656,7 @@ function escapeHtml(value) {
 function hideIntro() {
     document.getElementById('intro')?.classList.add('hidden');
     document.getElementById('examples')?.classList.add('hidden');
+    document.getElementById('recent')?.classList.add('hidden');
 }
 
 function showLoading() { hideIntro(); document.getElementById('loading').classList.remove('hidden'); }

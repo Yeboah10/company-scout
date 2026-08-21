@@ -900,3 +900,219 @@ body {
         display: none !important;
     }
 }
+
+/* Recently scouted */
+.recent {
+    max-width: 820px;
+    margin: 0 auto 36px;
+}
+
+.recent-title {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-dim);
+    margin-bottom: 12px;
+    text-align: center;
+}
+
+.recent-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 10px;
+}
+
+.recent-card {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 12px 14px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    text-decoration: none;
+    color: var(--text);
+    transition: background 0.2s, border-color 0.2s, transform 0.15s;
+}
+
+.recent-card:hover {
+    background: var(--bg-card-hover);
+    border-color: var(--accent);
+    transform: translateY(-1px);
+}
+
+.recent-name {
+    font-weight: 600;
+    font-size: 0.92rem;
+}
+
+.recent-sub {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    color: var(--text-dim);
+    font-size: 0.78rem;
+}
+
+.recent-score {
+    color: var(--accent);
+    font-weight: 600;
+}
+
+/* Claim cards */
+.claim-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+}
+
+.claim-date {
+    color: var(--text-muted);
+    font-size: 0.78rem;
+}
+
+.claim-date.undated {
+    color: var(--text-dim);
+    font-style: italic;
+}
+
+.claim-text {
+    margin-bottom: 8px;
+}
+
+.copy-claim {
+    margin-left: auto;
+    padding: 3px 10px;
+    font-size: 0.72rem;
+    font-family: inherit;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text-dim);
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s, border-color 0.2s;
+}
+
+.copy-claim:hover {
+    background: var(--bg-card-hover);
+    border-color: var(--accent);
+    color: var(--text);
+}
+
+/* Loading skeleton */
+.loading-head {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.skeleton {
+    max-width: 820px;
+    margin: 36px auto 0;
+    text-align: left;
+}
+
+.sk {
+    background: linear-gradient(
+        90deg,
+        var(--bg-card) 0%,
+        var(--bg-card-hover) 50%,
+        var(--bg-card) 100%
+    );
+    background-size: 200% 100%;
+    animation: sk-shimmer 1.4s ease-in-out infinite;
+    border-radius: 8px;
+}
+
+@keyframes sk-shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .sk { animation: none; }
+    .spinner { animation-duration: 2.4s; }
+}
+
+.skeleton-banner {
+    padding: 24px;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    margin-bottom: 18px;
+}
+
+.sk-title { height: 26px; width: 45%; margin-bottom: 12px; }
+.sk-meta  { height: 13px; width: 70%; }
+
+.skeleton-tabs {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.sk-tab { height: 16px; width: 80px; }
+
+.sk-line { height: 13px; margin-bottom: 10px; }
+.sk-line.short { width: 60%; }
+
+.skeleton-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 12px;
+    margin-top: 22px;
+}
+
+.sk-card { height: 96px; }
+
+/* Mobile */
+@media (max-width: 640px) {
+    #app { padding: 14px; }
+
+    .header { padding: 56px 0 22px; }
+    .logo { font-size: 1.6rem; }
+    .tagline { font-size: 0.95rem; }
+    .theme-toggle { top: 12px; }
+
+    /* Stacked, because a text field and button side by side leaves the field
+       too narrow to read a company name in. */
+    .search-form { flex-direction: column; }
+    .scout-btn { width: 100%; }
+
+    /* Five tabs cannot fit; scroll them rather than wrapping into two rows
+       that shift the content down. */
+    .tabs {
+        overflow-x: auto;
+        flex-wrap: nowrap;
+        scrollbar-width: none;
+        -webkit-overflow-scrolling: touch;
+    }
+    .tabs::-webkit-scrollbar { display: none; }
+    .tab { white-space: nowrap; flex: 0 0 auto; }
+
+    .score-banner { padding: 20px; }
+    .score-main { flex-direction: column; align-items: flex-start; }
+    .company-name { font-size: 1.3rem; }
+
+    .recent-list { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+    .intro { grid-template-columns: 1fr; }
+
+    .result-footer { flex-direction: column; align-items: flex-start; gap: 12px; }
+    .footer-actions { width: 100%; flex-wrap: wrap; }
+
+    .changelog-panel {
+        right: 10px;
+        left: 10px;
+        bottom: 10px;
+        width: auto;
+    }
+}
+
+@media print {
+    .recent,
+    .skeleton,
+    .copy-claim {
+        display: none !important;
+    }
+}

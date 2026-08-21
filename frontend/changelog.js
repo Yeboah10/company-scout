@@ -3,6 +3,17 @@
 // what they'd notice, not the commit that caused it.
 const CHANGELOG = [
     {
+        version: '0.6.0',
+        date: '2026-08-21',
+        changes: [
+            'Recently scouted companies now appear on the home page — one click to reopen a report.',
+            'Evidence is sorted newest first, with readable dates on every claim.',
+            'Copy any single claim, with its date and source, straight to your clipboard.',
+            'The page now sketches the report while it loads instead of showing a bare spinner.',
+            'Proper layout on phones, and shared links now show a preview card.'
+        ]
+    },
+    {
         version: '0.5.0',
         date: '2026-08-21',
         changes: [

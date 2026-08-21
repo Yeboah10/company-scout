@@ -205,6 +205,16 @@ async def report_json(key: str):
     )
 
 
+@app.get("/recent")
+async def recent_scouts():
+    """Recently scouted companies, for the home page.
+
+    These are already-paid-for reports, so surfacing them turns a cache hit
+    into the obvious next click rather than a lucky coincidence.
+    """
+    return JSONResponse(content={"recent": cache.recent()})
+
+
 @app.get("/health")
 async def health():
     return {"status": "ok"}

@@ -12,6 +12,16 @@ from backend.models.schemas import CompanyBrief
 # this before it reaches the filesystem or the key-value store.
 _SAFE_KEY = re.compile(r"[a-z0-9-]{1,64}")
 
+# How many recent scouts to remember for the home page.
+RECENT_LIMIT = 8
+
+
+def _entry_key(raw: str) -> str | None:
+    try:
+        return json.loads(raw).get("key")
+    except (json.JSONDecodeError, AttributeError):
+        return None
+
 
 def _log(message: str) -> None:
     # flush because Render pipes stdout, where print() is block-buffered and
@@ -66,6 +76,29 @@ class _FileBackend:
         except OSError:
             pass
 
+    def push_recent(self, entry: str, limit: int) -> None:
+        try:
+            self.dir.mkdir(parents=True, exist_ok=True)
+            existing = self.list_recent(limit)
+            # Same company scouted twice should move up, not appear twice.
+            key = json.loads(entry).get("key")
+            existing = [e for e in existing if json.loads(e).get("key") != key]
+            merged = [entry] + existing
+            tmp = self.dir / "_recent.tmp"
+            tmp.write_text(json.dumps(merged[:limit]), encoding="utf-8")
+            tmp.replace(self.dir / "_recent.json")
+        except (OSError, json.JSONDecodeError):
+            pass
+
+    def list_recent(self, limit: int) -> list[str]:
+        path = self.dir / "_recent.json"
+        if not path.exists():
+            return []
+        try:
+            return json.loads(path.read_text(encoding="utf-8"))[:limit]
+        except (OSError, json.JSONDecodeError):
+            return []
+
 
 class _RedisBackend:
     """Stores entries in Render Key Value, which outlives the web service's
@@ -98,6 +131,32 @@ class _RedisBackend:
             self.client.setex(f"brief:{key}", ttl_seconds, payload)
         except Exception as e:
             _log(f"Redis write failed: {e}")
+
+    def push_recent(self, entry: str, limit: int) -> None:
+        try:
+            # Entries carry a timestamp, so LREM on the raw string would never
+            # match a previous scout of the same company. Filter by key and
+            # rewrite the short list instead.
+            key = json.loads(entry).get("key")
+            existing = [
+                e for e in (self.client.lrange("briefs:recent", 0, limit * 2) or [])
+                if _entry_key(e) != key
+            ]
+            merged = [entry] + existing[: limit - 1]
+
+            pipe = self.client.pipeline()
+            pipe.delete("briefs:recent")
+            pipe.rpush("briefs:recent", *merged)
+            pipe.execute()
+        except Exception as e:
+            _log(f"Redis recent-push failed: {e}")
+
+    def list_recent(self, limit: int) -> list[str]:
+        try:
+            return self.client.lrange("briefs:recent", 0, limit - 1) or []
+        except Exception as e:
+            _log(f"Redis recent-read failed: {e}")
+            return []
 
 
 class BriefCache:
@@ -202,4 +261,40 @@ class BriefCache:
             return
 
         # Caching is an optimisation; never fail a request over it.
-        self.backend.write(_key_for(query), payload, self.ttl_seconds)
+        key = _key_for(query)
+        self.backend.write(key, payload, self.ttl_seconds)
+
+        # A compact index entry, so listing recent scouts doesn't mean loading
+        # and parsing a dozen full briefs.
+        try:
+            scores = brief.analysis.scores
+            self.backend.push_recent(
+                json.dumps(
+                    {
+                        "key": key,
+                        "name": brief.evidence.company.name,
+                        "country": brief.evidence.company.country,
+                        "score": scores.overall_score if scores else None,
+                        "recommendation": scores.recommendation if scores else None,
+                        "at": time.time(),
+                    }
+                ),
+                RECENT_LIMIT,
+            )
+        except Exception:
+            # The list is a convenience; never let it break a completed scout.
+            pass
+
+    def recent(self, limit: int = RECENT_LIMIT) -> list[dict]:
+        """Most recently scouted companies, newest first."""
+        if not settings.cache_enabled:
+            return []
+        out = []
+        for raw in self.backend.list_recent(limit):
+            try:
+                entry = json.loads(raw)
+            except (json.JSONDecodeError, TypeError):
+                continue
+            if isinstance(entry, dict) and entry.get("key"):
+                out.append(entry)
+        return out

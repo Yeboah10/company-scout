@@ -4,6 +4,23 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Company Scout</title>
+    <meta name="description" content="Evidence-backed intelligence briefs on African companies. Find out whether a company is worth your time.">
+    <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="/static/favicon.svg">
+
+    <!-- Shared links previewed nothing before this, which undercut the whole
+         point of having share links. -->
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Company Scout">
+    <meta property="og:title" content="Company Scout">
+    <meta property="og:description" content="Evidence-backed intelligence briefs on African companies. Find out whether a company is worth your time.">
+    <meta property="og:image" content="https://scout.yeboah.works/static/og-image.svg">
+    <meta property="og:url" content="https://scout.yeboah.works/">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Company Scout">
+    <meta name="twitter:description" content="Evidence-backed intelligence briefs on African companies.">
+    <meta name="twitter:image" content="https://scout.yeboah.works/static/og-image.svg">
+
     <link rel="stylesheet" href="/static/styles.css">
     <script>
         // Applied before first paint: setting this from app.js would show a
@@ -55,6 +72,12 @@
             </div>
         </div>
 
+        <!-- Recently scouted: populated from the cache, hidden when empty -->
+        <div id="recent" class="recent hidden">
+            <h2 class="recent-title">Recently scouted</h2>
+            <div id="recent-list" class="recent-list"></div>
+        </div>
+
         <!-- What you get: only shown before a report exists -->
         <div id="intro" class="intro">
             <div class="intro-card">
@@ -76,8 +99,10 @@
 
         <!-- Loading -->
         <div id="loading" class="loading hidden">
-            <div class="spinner"></div>
-            <p id="loading-status" class="loading-status">Researching...</p>
+            <div class="loading-head">
+                <div class="spinner"></div>
+                <p id="loading-status" class="loading-status">Researching...</p>
+            </div>
             <div class="loading-steps">
                 <div id="step-1" class="step">Resolving company identity</div>
                 <div id="step-2" class="step">Searching for evidence</div>
@@ -86,6 +111,25 @@
                 <div id="step-5" class="step">Scoring opportunity</div>
             </div>
             <p id="loading-patience" class="loading-patience hidden">Your report is still cooking — this can take a few minutes. Thanks for your patience!</p>
+
+            <!-- Skeleton: shows the shape the report will take while it loads -->
+            <div class="skeleton" aria-hidden="true">
+                <div class="skeleton-banner">
+                    <div class="sk sk-title"></div>
+                    <div class="sk sk-meta"></div>
+                </div>
+                <div class="skeleton-tabs">
+                    <div class="sk sk-tab"></div><div class="sk sk-tab"></div>
+                    <div class="sk sk-tab"></div><div class="sk sk-tab"></div>
+                </div>
+                <div class="sk sk-line"></div>
+                <div class="sk sk-line"></div>
+                <div class="sk sk-line short"></div>
+                <div class="skeleton-cards">
+                    <div class="sk sk-card"></div><div class="sk sk-card"></div>
+                    <div class="sk sk-card"></div><div class="sk sk-card"></div>
+                </div>
+            </div>
         </div>
 
         <!-- Error -->
