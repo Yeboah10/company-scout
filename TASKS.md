@@ -38,8 +38,14 @@
 - [x] Parallelise Tavily search queries
 - [x] Derive search year from today instead of hardcoding
 - [x] Per-visitor rate limiting, generic error responses
-- [ ] Persist cache across restarts (Render free tier has an ephemeral
-      filesystem and spins down when idle, so the cache is lost on restart)
+- [x] Persist cache in Render Key Value (falls back to disk locally)
+
+## Sprint 6 — Sharing & Export
+- [x] Shareable report links at /r/{key}
+- [x] Markdown export at /report/{key}.md
+- [x] Print/PDF styles (light theme, all tab panels expanded)
+- [x] Replace JSON download with Markdown in web UI and CLI
+- [x] Cache hits no longer count against the rate limit
 
 ## Known constraint — Gemini free tier quota
 A full scout costs ~6 Gemini calls (1 resolver + ~3 extractor batches +
@@ -52,14 +58,18 @@ Two consequences:
   and reverted: it exhausts the minute budget and later pipeline stages
   stall in backoff, making runs slower (317s parallel vs ~255s sequential).
 
-## Remaining from PRD
+## Remaining from PRD — the real gap
 - [ ] Run the 20-company evaluation set (eval/companies.json)
 - [ ] Populate eval/failure_log.md with observed failures
 - [ ] Make recency actually count in scoring (PRD principle #5 is stated
       in prompts but never weighted)
 
+The evaluation is the largest outstanding item. Until it runs, PRD success
+criteria 2, 4, 6 and 9 are unverified — including "can correctly say some
+companies aren't worth pursuing", which is the product's core claim.
+
 ## Possible next steps (UX)
-- [ ] Shareable report links (currently JSON download only)
-- [ ] Readable Markdown/PDF export
-- [ ] Recent-scouts list on the homepage
+- [ ] Recent-scouts list on the homepage (cheap now that the cache persists)
 - [ ] Sort evidence recent-first and surface dates prominently
+- [ ] Show which claims corroborate each other across sources
+- [ ] Let the user force a refresh of a cached report
