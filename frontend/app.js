@@ -398,17 +398,6 @@ async function loadSharedReport() {
 
 loadSharedReport();
 
-function downloadReport() {
-    if (!currentBrief) return;
-    const blob = new Blob([JSON.stringify(currentBrief, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `scout_report_${currentBrief.evidence.company.name.toLowerCase().replace(/\s+/g, '_')}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-}
-
 function showLoading() { document.getElementById('loading').classList.remove('hidden'); }
 function hideLoading() { document.getElementById('loading').classList.add('hidden'); }
 function showResults() { document.getElementById('results').classList.remove('hidden'); }

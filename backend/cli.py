@@ -1,7 +1,7 @@
-import json
 import sys
 
 from backend.pipeline.researcher import ResearchPipeline
+from backend.services.report import brief_to_markdown
 
 
 def main():
@@ -138,11 +138,10 @@ def main():
     print(f"\n  Completed in {brief.duration_seconds:.1f}s")
     print(f"{'='*70}\n")
 
-    # Save JSON report
-    output_path = f"scout_report_{c.name.lower().replace(' ', '_')}.json"
-    report_data = brief.model_dump(mode="json")
+    # Save a readable Markdown report
+    output_path = f"scout_report_{c.name.lower().replace(' ', '_')}.md"
     with open(output_path, "w", encoding="utf-8") as f:
-        json.dump(report_data, f, indent=2, default=str)
+        f.write(brief_to_markdown(brief))
     print(f"  Full report saved to: {output_path}\n")
 
 

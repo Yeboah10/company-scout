@@ -14,6 +14,12 @@ class Settings(BaseSettings):
     cache_dir: str = ".cache"
     cache_ttl_days: int = 7
 
+    # When set, briefs are cached in Render Key Value instead of on disk.
+    # Render's web service filesystem is ephemeral and spins down when idle,
+    # so disk caching alone loses every saved report (and every share link)
+    # on restart.
+    redis_url: str = ""
+
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
 
 

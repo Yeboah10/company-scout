@@ -8,6 +8,10 @@ from pathlib import Path
 from backend.config import settings
 from backend.models.schemas import CompanyBrief
 
+# Share keys arrive from URLs, so anything used to address storage must match
+# this before it reaches the filesystem or the key-value store.
+_SAFE_KEY = re.compile(r"[a-z0-9-]{1,64}")
+
 
 def _normalise(query: str) -> str:
     """Collapse cosmetic differences so "BasiGo", "basigo " and "Basi  Go"
@@ -17,7 +21,7 @@ def _normalise(query: str) -> str:
 
 
 def _key_for(query: str) -> str:
-    """A filesystem-safe, human-readable key.
+    """A storage-safe, human-readable key.
 
     Readable because it doubles as the share URL slug: "basigo" reads better
     in a link than a hash. A short hash is appended so that two queries which
@@ -30,57 +34,129 @@ def _key_for(query: str) -> str:
     return f"{slug}-{digest}" if slug else digest
 
 
-class BriefCache:
-    """File-backed cache of completed briefs.
+class _FileBackend:
+    """Stores entries as JSON files. Used for local development."""
 
-    Note: on Render's free tier the filesystem is ephemeral and the service
-    spins down when idle, so this cache survives within a warm session but
-    not across restarts. It still prevents the common case of re-running a
-    company that was just scouted.
+    def __init__(self, directory: str):
+        self.dir = Path(directory)
+
+    def read(self, key: str) -> str | None:
+        path = self.dir / f"{key}.json"
+        if not path.exists():
+            return None
+        try:
+            return path.read_text(encoding="utf-8")
+        except OSError:
+            return None
+
+    def write(self, key: str, payload: str, ttl_seconds: int) -> None:
+        try:
+            self.dir.mkdir(parents=True, exist_ok=True)
+            # Write to a temp file first so a crash mid-write cannot leave a
+            # truncated entry behind.
+            tmp = self.dir / f"{key}.tmp"
+            tmp.write_text(payload, encoding="utf-8")
+            tmp.replace(self.dir / f"{key}.json")
+        except OSError:
+            pass
+
+
+class _RedisBackend:
+    """Stores entries in Render Key Value, which outlives the web service's
+    ephemeral disk and its idle spin-downs."""
+
+    def __init__(self, url: str):
+        import redis  # imported lazily so local runs need no redis install
+
+        self.client = redis.from_url(
+            url,
+            decode_responses=True,
+            socket_timeout=5,
+            socket_connect_timeout=5,
+        )
+
+    def read(self, key: str) -> str | None:
+        try:
+            return self.client.get(f"brief:{key}")
+        except Exception as e:
+            # A cache outage must degrade to a slow lookup, never an error.
+            print(f"[cache] Redis read failed: {e}")
+            return None
+
+    def write(self, key: str, payload: str, ttl_seconds: int) -> None:
+        try:
+            self.client.setex(f"brief:{key}", ttl_seconds, payload)
+        except Exception as e:
+            print(f"[cache] Redis write failed: {e}")
+
+
+class BriefCache:
+    """Cache of completed briefs, backed by Render Key Value when configured
+    and by local files otherwise.
+
+    A full scout costs ~6 Gemini calls against a 20/day free-tier quota, so
+    this is what makes repeat lookups viable at all. It also backs the share
+    links: /r/{key} resolves through here.
     """
 
-    def __init__(self, cache_dir: str | None = None, ttl_days: int | None = None):
+    def __init__(
+        self,
+        cache_dir: str | None = None,
+        ttl_days: int | None = None,
+        redis_url: str | None = None,
+    ):
         # Explicit None checks, not `or` — a caller passing ttl_days=0 means
         # "treat everything as stale", not "use the default".
-        self.dir = Path(cache_dir if cache_dir is not None else settings.cache_dir)
         days = ttl_days if ttl_days is not None else settings.cache_ttl_days
         self.ttl_seconds = days * 86400
+
+        url = redis_url if redis_url is not None else settings.redis_url
+        directory = cache_dir if cache_dir is not None else settings.cache_dir
+
+        self.backend: _FileBackend | _RedisBackend
+        if url:
+            try:
+                self.backend = _RedisBackend(url)
+                print("[cache] Using Render Key Value for persistent caching")
+            except Exception as e:
+                # Missing package or bad URL shouldn't take the app down.
+                print(f"[cache] Redis unavailable ({e}); falling back to disk")
+                self.backend = _FileBackend(directory)
+        else:
+            self.backend = _FileBackend(directory)
 
     def key_for(self, query: str) -> str:
         """Public accessor so callers can build share links."""
         return _key_for(query)
 
-    def _path_for(self, query: str) -> Path:
-        return self.dir / f"{_key_for(query)}.json"
+    def get(self, query: str) -> CompanyBrief | None:
+        if not settings.cache_enabled:
+            return None
+        return self._load(_key_for(query))
 
     def get_by_key(self, key: str) -> CompanyBrief | None:
         """Load a brief by its share key rather than the original query."""
         if not settings.cache_enabled:
             return None
-
-        # Guard against path traversal — this key arrives from a URL.
-        if not re.fullmatch(r"[a-z0-9-]{1,64}", key):
+        if not _SAFE_KEY.fullmatch(key):
             return None
+        return self._load(key)
 
-        return self._load(self.dir / f"{key}.json")
-
-    def get(self, query: str) -> CompanyBrief | None:
-        if not settings.cache_enabled:
-            return None
-        return self._load(self._path_for(query))
-
-    def _load(self, path: Path) -> CompanyBrief | None:
-        if not path.exists():
+    def _load(self, key: str) -> CompanyBrief | None:
+        raw = self.backend.read(key)
+        if raw is None:
             return None
 
         try:
-            with path.open(encoding="utf-8") as f:
-                payload = json.load(f)
-        except (OSError, json.JSONDecodeError):
+            payload = json.loads(raw)
+        except json.JSONDecodeError:
             # A corrupt or half-written entry should behave like a miss.
             return None
 
-        if time.time() - payload.get("cached_at", 0) > self.ttl_seconds:
+        cached_at = payload.get("cached_at", 0)
+        # Redis expires entries itself, but the file backend does not, and
+        # shortening the configured TTL should take effect either way.
+        if time.time() - cached_at > self.ttl_seconds:
             return None
 
         try:
@@ -93,7 +169,7 @@ class BriefCache:
         # rather than implying it was just researched.
         brief.from_cache = True
         brief.cached_at = datetime.fromtimestamp(
-            payload.get("cached_at", 0), tz=timezone.utc
+            cached_at, tz=timezone.utc
         ).isoformat()
         return brief
 
@@ -102,18 +178,15 @@ class BriefCache:
             return
 
         try:
-            self.dir.mkdir(parents=True, exist_ok=True)
-            payload = {
-                "cached_at": time.time(),
-                "query": _normalise(query),
-                "brief": brief.model_dump(mode="json"),
-            }
-            # Write to a temp file first so a crash mid-write cannot leave a
-            # truncated entry behind.
-            tmp = self._path_for(query).with_suffix(".tmp")
-            with tmp.open("w", encoding="utf-8") as f:
-                json.dump(payload, f)
-            tmp.replace(self._path_for(query))
-        except OSError:
-            # Caching is an optimisation; never fail a request over it.
-            pass
+            payload = json.dumps(
+                {
+                    "cached_at": time.time(),
+                    "query": _normalise(query),
+                    "brief": brief.model_dump(mode="json"),
+                }
+            )
+        except (TypeError, ValueError):
+            return
+
+        # Caching is an optimisation; never fail a request over it.
+        self.backend.write(_key_for(query), payload, self.ttl_seconds)

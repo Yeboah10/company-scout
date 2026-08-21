@@ -18,6 +18,7 @@ env/
 *~
 .DS_Store
 Thumbs.db
+scout_report_*.md
 scout_report_*.json
 eval/results/
 .cache/
