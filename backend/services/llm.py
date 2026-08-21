@@ -1,7 +1,9 @@
 import json
 import re
+import time
 
 from google import genai
+from google.genai import errors as genai_errors
 
 from backend.config import settings
 
@@ -13,15 +15,13 @@ class LLMService:
 
     def extract_structured(self, system_prompt: str, user_prompt: str, retries: int = 2) -> dict:
         for attempt in range(retries + 1):
-            response = self.client.models.generate_content(
-                model=self.model,
-                contents=f"{system_prompt}\n\n{user_prompt}",
-                config=genai.types.GenerateContentConfig(
-                    temperature=0.1,
-                    max_output_tokens=8192,
-                    response_mime_type="application/json",
-                ),
-            )
+            try:
+                response = self._call_with_rate_limit_retry(system_prompt, user_prompt)
+            except Exception:
+                if attempt < retries:
+                    continue
+                raise
+
             text = response.text
             try:
                 return json.loads(text)
@@ -33,6 +33,26 @@ class LLMService:
                     if attempt < retries:
                         continue
                     raise
+
+    def _call_with_rate_limit_retry(self, system_prompt: str, user_prompt: str, max_waits: int = 3):
+        for wait_attempt in range(max_waits + 1):
+            try:
+                return self.client.models.generate_content(
+                    model=self.model,
+                    contents=f"{system_prompt}\n\n{user_prompt}",
+                    config=genai.types.GenerateContentConfig(
+                        temperature=0.1,
+                        max_output_tokens=8192,
+                        response_mime_type="application/json",
+                    ),
+                )
+            except genai_errors.ClientError as e:
+                if "429" in str(e) and wait_attempt < max_waits:
+                    wait_time = 20 * (wait_attempt + 1)
+                    print(f"       Rate limited. Waiting {wait_time}s before retry...")
+                    time.sleep(wait_time)
+                    continue
+                raise
 
 
 def _clean_json(text: str) -> str:

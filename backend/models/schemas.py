@@ -4,7 +4,7 @@ from datetime import date, datetime
 from enum import Enum
 from typing import Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, computed_field
 
 
 class SourceQuality(str, Enum):
@@ -126,6 +126,7 @@ class OpportunityScores(BaseModel):
     research_score: float = Field(ge=0, le=10)
     research_reasoning: str
 
+    @computed_field
     @property
     def overall_score(self) -> float:
         return round(
@@ -134,6 +135,7 @@ class OpportunityScores(BaseModel):
             1,
         )
 
+    @computed_field
     @property
     def recommendation(self) -> str:
         s = self.overall_score
