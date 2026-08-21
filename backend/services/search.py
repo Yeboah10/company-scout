@@ -1,0 +1,41 @@
+from tavily import TavilyClient
+
+from backend.config import settings
+from backend.models.schemas import SearchResult
+
+
+class SearchService:
+    def __init__(self):
+        self.client = TavilyClient(api_key=settings.tavily_api_key)
+
+    def search(self, query: str, max_results: int | None = None) -> list[SearchResult]:
+        max_results = max_results or settings.max_search_results
+        response = self.client.search(
+            query=query,
+            max_results=max_results,
+            include_answer=False,
+        )
+        results = []
+        for r in response.get("results", []):
+            results.append(
+                SearchResult(
+                    query=query,
+                    url=r.get("url", ""),
+                    title=r.get("title", ""),
+                    snippet=r.get("content", ""),
+                    published_date=r.get("published_date"),
+                    score=r.get("score"),
+                )
+            )
+        return results
+
+    def search_multiple(self, queries: list[str], max_results_per_query: int = 5) -> list[SearchResult]:
+        all_results = []
+        seen_urls = set()
+        for query in queries:
+            results = self.search(query, max_results=max_results_per_query)
+            for r in results:
+                if r.url not in seen_urls:
+                    seen_urls.add(r.url)
+                    all_results.append(r)
+        return all_results
