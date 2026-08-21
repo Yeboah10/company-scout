@@ -1,8 +1,10 @@
 import time
 
-from backend.models.schemas import ResearchEvidence, Source, SourceQuality
+from backend.models.schemas import CompanyBrief, ResearchEvidence, Source, SourceQuality
+from backend.pipeline.analyst import CompanyAnalyst
 from backend.pipeline.extractor import EvidenceExtractor
 from backend.pipeline.resolver import CompanyResolver
+from backend.pipeline.scorer import CompanyScorer
 from backend.pipeline.searcher import CompanySearcher
 from backend.services.llm import LLMService
 from backend.services.search import SearchService
@@ -39,20 +41,22 @@ class ResearchPipeline:
         self.resolver = CompanyResolver(self.search, self.llm)
         self.searcher = CompanySearcher(self.search)
         self.extractor = EvidenceExtractor(self.llm)
+        self.analyst = CompanyAnalyst(self.llm)
+        self.scorer = CompanyScorer(self.llm)
 
-    def research(self, query: str) -> tuple[ResearchEvidence, float]:
+    def research(self, query: str) -> CompanyBrief:
         start = time.time()
 
-        print(f"[1/3] Resolving company identity: {query}")
+        print(f"[1/5] Resolving company identity: {query}")
         company, resolver_results = self.resolver.resolve(query)
         print(f"       > {company.name} ({company.country or 'unknown country'})")
 
-        print(f"[2/3] Searching for evidence...")
+        print(f"[2/5] Searching for evidence...")
         search_results = self.searcher.search_company(company)
         all_results = resolver_results + search_results
         print(f"       > {len(all_results)} unique sources found")
 
-        print(f"[3/3] Extracting structured evidence...")
+        print(f"[3/5] Extracting structured evidence...")
         claims, people = self.extractor.extract(company, all_results)
         print(f"       > {len(claims)} claims, {len(people)} people extracted")
 
@@ -85,5 +89,18 @@ class ResearchPipeline:
             raw_search_results=all_results,
         )
 
+        print(f"[4/5] Analysing strategic signals and opportunities...")
+        analysis = self.analyst.analyse(evidence)
+        print(f"       > {len(analysis.signals)} signals, {len(analysis.story_angles)} story angles")
+
+        print(f"[5/5] Scoring opportunity...")
+        scores = self.scorer.score(evidence, analysis)
+        analysis.scores = scores
+        print(f"       > Overall: {scores.overall_score}/10 ({scores.recommendation})")
+
         duration = time.time() - start
-        return evidence, duration
+        return CompanyBrief(
+            evidence=evidence,
+            analysis=analysis,
+            duration_seconds=round(duration, 2),
+        )

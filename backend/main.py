@@ -6,7 +6,7 @@ from backend.pipeline.researcher import ResearchPipeline
 app = FastAPI(
     title="Company Scout",
     description="AI-powered company intelligence and opportunity assessment",
-    version="0.1.0",
+    version="0.2.0",
 )
 
 
@@ -16,9 +16,9 @@ async def scout_company(request: ScoutRequest):
         raise HTTPException(status_code=400, detail="Company name or URL required")
 
     pipeline = ResearchPipeline()
-    evidence, duration = pipeline.research(request.query.strip())
+    brief = pipeline.research(request.query.strip())
 
-    return ScoutResponse(evidence=evidence, duration_seconds=round(duration, 2))
+    return ScoutResponse(brief=brief, duration_seconds=brief.duration_seconds)
 
 
 @app.get("/health")

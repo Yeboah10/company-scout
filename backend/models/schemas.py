@@ -76,10 +76,96 @@ class ResearchEvidence(BaseModel):
     researched_at: datetime = Field(default_factory=datetime.utcnow)
 
 
+class StrategicSignal(BaseModel):
+    title: str
+    evidence: str = Field(description="The factual basis for this signal")
+    interpretation: str = Field(description="What this might mean strategically")
+    question: str = Field(description="What to investigate further")
+    confidence: Confidence = Confidence.MEDIUM
+
+
+class StoryAngle(BaseModel):
+    angle: str = Field(description="The research question or story hook")
+    why_interesting: str
+    supporting_evidence: str
+    information_gap: str = Field(description="What we don't know yet")
+
+
+class CaseStudyOpportunity(BaseModel):
+    potential_title: str
+    central_decision: str
+    decision_maker: str
+    strategic_tension: str
+    evidence_available: str
+    missing_information: str
+    score: float = Field(ge=0, le=10)
+    reasoning: str
+
+
+class OutreachOpportunity(BaseModel):
+    recommended_contact: str
+    role: str
+    why: str
+    trigger: str = Field(description="Recent event that makes outreach timely")
+    outreach_thesis: str
+    what_you_could_offer: str
+
+
+class TopPriority(BaseModel):
+    topic: str
+    why: str
+
+
+class OpportunityScores(BaseModel):
+    story_score: float = Field(ge=0, le=10)
+    story_reasoning: str
+    case_study_score: float = Field(ge=0, le=10)
+    case_study_reasoning: str
+    outreach_score: float = Field(ge=0, le=10)
+    outreach_reasoning: str
+    research_score: float = Field(ge=0, le=10)
+    research_reasoning: str
+
+    @property
+    def overall_score(self) -> float:
+        return round(
+            (self.story_score + self.case_study_score
+             + self.outreach_score + self.research_score) / 4,
+            1,
+        )
+
+    @property
+    def recommendation(self) -> str:
+        s = self.overall_score
+        if s >= 8.0:
+            return "HIGH PRIORITY"
+        if s >= 6.0:
+            return "WORTH A LOOK"
+        if s >= 4.0:
+            return "LOW PRIORITY"
+        return "SKIP"
+
+
+class CompanyAnalysis(BaseModel):
+    executive_summary: str
+    signals: list[StrategicSignal] = Field(default_factory=list)
+    story_angles: list[StoryAngle] = Field(default_factory=list)
+    case_study: Optional[CaseStudyOpportunity] = None
+    outreach: Optional[OutreachOpportunity] = None
+    top_priorities: list[TopPriority] = Field(default_factory=list)
+    scores: Optional[OpportunityScores] = None
+
+
+class CompanyBrief(BaseModel):
+    evidence: ResearchEvidence
+    analysis: CompanyAnalysis
+    duration_seconds: float
+
+
 class ScoutRequest(BaseModel):
     query: str = Field(description="Company name or website URL")
 
 
 class ScoutResponse(BaseModel):
-    evidence: ResearchEvidence
+    brief: CompanyBrief
     duration_seconds: float
