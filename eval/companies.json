@@ -1,0 +1,272 @@
+{
+  "description": "Company Scout evaluation set — 20 companies across 5 categories",
+  "categories": {
+    "A": "Obviously interesting — should score HIGH PRIORITY (8+)",
+    "B": "Moderately interesting — should score WORTH A LOOK (6-7.9)",
+    "C": "Boring/low-opportunity — should score LOW PRIORITY or SKIP (<6)",
+    "D": "Sparse information — system should flag low confidence",
+    "E": "Contradictory/ambiguous — system should flag uncertainty"
+  },
+  "companies": [
+    {
+      "id": 1,
+      "name": "Spiro",
+      "query": "Spiro electric mobility Africa",
+      "category": "A",
+      "country": "UAE/West Africa",
+      "industry": "Electric vehicles",
+      "expected": {
+        "should_find": ["Equitane backing", "$100M+ funding", "6 African countries", "battery swapping", "leadership change 2026"],
+        "expected_score_range": "8-10",
+        "notes": "Well-funded, high-profile. Lots of coverage."
+      }
+    },
+    {
+      "id": 2,
+      "name": "BasiGo",
+      "query": "BasiGo Kenya electric bus",
+      "category": "A",
+      "country": "Kenya",
+      "industry": "Electric vehicles",
+      "expected": {
+        "should_find": ["pay-as-you-drive model", "$42M funding", "Africa50 investor", "100+ buses", "Rwanda expansion"],
+        "expected_score_range": "7-9",
+        "notes": "Strong coverage, clear story angles."
+      }
+    },
+    {
+      "id": 3,
+      "name": "Flutterwave",
+      "query": "Flutterwave payments Africa",
+      "category": "A",
+      "country": "Nigeria",
+      "industry": "Fintech",
+      "expected": {
+        "should_find": ["unicorn valuation", "regulatory issues", "multiple African markets", "Olugbenga Agboola founder"],
+        "expected_score_range": "7-9",
+        "notes": "Major African fintech. System should pick up both positive news and controversies."
+      }
+    },
+    {
+      "id": 4,
+      "name": "Andela",
+      "query": "Andela talent platform Africa",
+      "category": "A",
+      "country": "Nigeria/USA",
+      "industry": "Talent/HR Tech",
+      "expected": {
+        "should_find": ["pivot from training to marketplace", "layoffs", "Series E funding", "global expansion"],
+        "expected_score_range": "6-8",
+        "notes": "Interesting for the pivot story. Mixed recent signals."
+      }
+    },
+    {
+      "id": 5,
+      "name": "Releaf",
+      "query": "Releaf Africa food processing technology",
+      "category": "A",
+      "country": "Nigeria",
+      "industry": "Agritech/Food processing",
+      "expected": {
+        "should_find": ["palm oil processing", "Kraken machine", "smallholder farmers", "Series A funding"],
+        "expected_score_range": "7-9",
+        "notes": "Hardware + agriculture. Strong case study potential."
+      }
+    },
+    {
+      "id": 6,
+      "name": "Moniepoint",
+      "query": "Moniepoint Nigeria fintech",
+      "category": "B",
+      "country": "Nigeria",
+      "industry": "Fintech",
+      "expected": {
+        "should_find": ["agent banking", "profitability claims", "large transaction volumes"],
+        "expected_score_range": "6-8",
+        "notes": "Profitable fintech — interesting but well-covered territory."
+      }
+    },
+    {
+      "id": 7,
+      "name": "Wasoko",
+      "query": "Wasoko B2B ecommerce Africa",
+      "category": "B",
+      "country": "Kenya",
+      "industry": "E-commerce/Logistics",
+      "expected": {
+        "should_find": ["merger with MaxAB", "B2B distribution", "funding history", "operational challenges"],
+        "expected_score_range": "5-7",
+        "notes": "Merger story is interesting. Some struggles. Mixed signals."
+      }
+    },
+    {
+      "id": 8,
+      "name": "TymeBank",
+      "query": "TymeBank South Africa digital bank",
+      "category": "B",
+      "country": "South Africa",
+      "industry": "Digital banking",
+      "expected": {
+        "should_find": ["profitability milestone", "customer numbers", "expansion to Southeast Asia"],
+        "expected_score_range": "6-8",
+        "notes": "One of few profitable African neobanks."
+      }
+    },
+    {
+      "id": 9,
+      "name": "Copia Global",
+      "query": "Copia Global Kenya ecommerce",
+      "category": "B",
+      "country": "Kenya",
+      "industry": "E-commerce",
+      "expected": {
+        "should_find": ["last-mile delivery", "rural commerce", "funding rounds", "Uganda expansion"],
+        "expected_score_range": "5-7",
+        "notes": "Interesting model but unclear trajectory."
+      }
+    },
+    {
+      "id": 10,
+      "name": "Roam Electric",
+      "query": "Roam Electric motorcycles Kenya",
+      "category": "B",
+      "country": "Kenya",
+      "industry": "Electric vehicles",
+      "expected": {
+        "should_find": ["electric motorcycles", "electric buses", "local manufacturing"],
+        "expected_score_range": "6-8",
+        "notes": "Direct competitor to Spiro/BasiGo. Good comparison case."
+      }
+    },
+    {
+      "id": 11,
+      "name": "Pula",
+      "query": "Pula crop insurance Africa",
+      "category": "C",
+      "country": "Kenya",
+      "industry": "Insurtech/Agritech",
+      "expected": {
+        "should_find": ["parametric insurance", "smallholder farmers", "satellite data"],
+        "expected_score_range": "4-6",
+        "notes": "Niche. Interesting tech but limited story breadth."
+      }
+    },
+    {
+      "id": 12,
+      "name": "54gene",
+      "query": "54gene genomics Nigeria",
+      "category": "C",
+      "country": "Nigeria",
+      "industry": "Healthtech/Genomics",
+      "expected": {
+        "should_find": ["shutdown or major restructuring", "African genomics data", "controversy"],
+        "expected_score_range": "3-5",
+        "notes": "Company had major problems. System should flag this as cautionary, not opportunity."
+      }
+    },
+    {
+      "id": 13,
+      "name": "Twiga Foods",
+      "query": "Twiga Foods Kenya agriculture",
+      "category": "C",
+      "country": "Kenya",
+      "industry": "Agritech/Logistics",
+      "expected": {
+        "should_find": ["B2B food distribution", "financial difficulties", "layoffs", "pivot attempts"],
+        "expected_score_range": "3-5",
+        "notes": "Was once promising but struggled. System should not score it as interesting."
+      }
+    },
+    {
+      "id": 14,
+      "name": "Kuda Bank",
+      "query": "Kuda Bank Nigeria neobank",
+      "category": "C",
+      "country": "Nigeria",
+      "industry": "Fintech",
+      "expected": {
+        "should_find": ["digital banking", "funding rounds", "regulatory challenges"],
+        "expected_score_range": "4-6",
+        "notes": "Decent company but many similar neobank stories already told."
+      }
+    },
+    {
+      "id": 15,
+      "name": "Wangara Green Ventures",
+      "query": "Wangara Green Ventures Ghana",
+      "category": "D",
+      "country": "Ghana",
+      "industry": "Impact investing",
+      "expected": {
+        "should_find": [],
+        "expected_score_range": "2-5",
+        "notes": "Small fund. Very little public information. System should flag low confidence."
+      }
+    },
+    {
+      "id": 16,
+      "name": "Shuttlers",
+      "query": "Shuttlers Lagos Nigeria bus",
+      "category": "D",
+      "country": "Nigeria",
+      "industry": "Transport",
+      "expected": {
+        "should_find": ["shared bus service", "Lagos operations"],
+        "expected_score_range": "3-6",
+        "notes": "Limited coverage. System should say what it couldn't find."
+      }
+    },
+    {
+      "id": 17,
+      "name": "Sabi",
+      "query": "Sabi Nigeria B2B trade",
+      "category": "D",
+      "country": "Nigeria",
+      "industry": "B2B Commerce",
+      "expected": {
+        "should_find": ["trade enablement", "informal retailers"],
+        "expected_score_range": "4-6",
+        "notes": "Some coverage but sparse detail on operations."
+      }
+    },
+    {
+      "id": 18,
+      "name": "MAX",
+      "query": "MAX.ng Nigeria motorcycle delivery",
+      "category": "E",
+      "country": "Nigeria",
+      "industry": "Mobility/Logistics",
+      "expected": {
+        "should_find": ["motorcycle logistics", "EV pivot", "multiple name changes"],
+        "expected_score_range": "5-7",
+        "notes": "Name confusion risk (MAX vs other companies). System should resolve correctly."
+      }
+    },
+    {
+      "id": 19,
+      "name": "Jumia",
+      "query": "Jumia Technologies Africa ecommerce",
+      "category": "E",
+      "country": "Nigeria/Germany",
+      "industry": "E-commerce",
+      "expected": {
+        "should_find": ["public company NYSE", "profitability struggles", "market exits", "Zinnov fraud allegations history"],
+        "expected_score_range": "5-7",
+        "notes": "Public company with contradictory narratives. Lots of info but mixed signals."
+      }
+    },
+    {
+      "id": 20,
+      "name": "iProcure",
+      "query": "iProcure Kenya agritech supply chain",
+      "category": "E",
+      "country": "Kenya",
+      "industry": "Agritech",
+      "expected": {
+        "should_find": ["agri-input distribution", "rural supply chain"],
+        "expected_score_range": "3-6",
+        "notes": "Company may have pivoted or gone quiet. System should flag uncertainty."
+      }
+    }
+  ]
+}
