@@ -20,3 +20,4 @@ env/
 Thumbs.db
 scout_report_*.json
 eval/results/
+.cache/

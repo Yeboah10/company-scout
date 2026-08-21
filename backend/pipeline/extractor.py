@@ -62,11 +62,24 @@ class EvidenceExtractor:
         if not search_results:
             return [], []
 
+        batches = [
+            search_results[i : i + 10] for i in range(0, len(search_results), 10)
+        ]
+
+        # Deliberately sequential. These batches are independent and running
+        # them concurrently is tempting, but the Gemini free tier's
+        # requests-per-minute cap is the binding constraint: a parallel burst
+        # exhausts the minute's budget and the later analyst/scorer stages
+        # then stall in rate-limit backoff, making the whole run slower.
+        # Measured: 317s parallel vs ~255s sequential.
         chunks = []
-        for i in range(0, len(search_results), 10):
-            chunk = search_results[i : i + 10]
-            c, p = self._extract_chunk(company, chunk)
-            chunks.append((c, p))
+        for batch in batches:
+            try:
+                chunks.append(self._extract_chunk(company, batch))
+            except Exception as e:
+                # Losing one batch costs some evidence but shouldn't fail the run.
+                print(f"       ! Extraction failed for a batch: {e}")
+                chunks.append(([], []))
 
         all_claims = []
         all_people = []

@@ -1,3 +1,5 @@
+from concurrent.futures import ThreadPoolExecutor
+
 from tavily import TavilyClient
 
 from backend.config import settings
@@ -30,10 +32,22 @@ class SearchService:
         return results
 
     def search_multiple(self, queries: list[str], max_results_per_query: int = 5) -> list[SearchResult]:
+        # The queries are independent, so run them concurrently. Results are
+        # then merged in the original query order to keep output stable.
+        def run(query: str) -> list[SearchResult]:
+            try:
+                return self.search(query, max_results=max_results_per_query)
+            except Exception as e:
+                # One failed query shouldn't sink the whole research run.
+                print(f"       ! Search failed for '{query}': {e}")
+                return []
+
+        with ThreadPoolExecutor(max_workers=len(queries) or 1) as pool:
+            per_query = list(pool.map(run, queries))
+
         all_results = []
         seen_urls = set()
-        for query in queries:
-            results = self.search(query, max_results=max_results_per_query)
+        for results in per_query:
             for r in results:
                 if r.url not in seen_urls:
                     seen_urls.add(r.url)

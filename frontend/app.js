@@ -268,8 +268,14 @@ function renderBrief(brief) {
         </div>
     `).join('');
 
-    // Duration
-    document.getElementById('duration').textContent = `Completed in ${brief.duration_seconds.toFixed(1)}s`;
+    // Duration / cache provenance
+    if (brief.from_cache) {
+        document.getElementById('duration').textContent =
+            `Saved report from ${formatCachedAt(brief.cached_at)} — shown instantly`;
+    } else {
+        document.getElementById('duration').textContent =
+            `Completed in ${brief.duration_seconds.toFixed(1)}s`;
+    }
 
     // Reset to overview tab
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
@@ -314,6 +320,17 @@ function getBadgeClass(rec) {
 
 function formatTier(tier) {
     return tier.replace('_', ' ').toUpperCase();
+}
+
+function formatCachedAt(iso) {
+    if (!iso) return 'earlier';
+    const then = new Date(iso);
+    if (isNaN(then)) return 'earlier';
+    const hours = Math.floor((Date.now() - then) / 3600000);
+    if (hours < 1) return 'just now';
+    if (hours < 24) return `${hours} hour${hours === 1 ? '' : 's'} ago`;
+    const days = Math.floor(hours / 24);
+    return `${days} day${days === 1 ? '' : 's'} ago`;
 }
 
 function esc(str) {

@@ -6,6 +6,7 @@ from backend.pipeline.extractor import EvidenceExtractor
 from backend.pipeline.resolver import CompanyResolver
 from backend.pipeline.scorer import CompanyScorer
 from backend.pipeline.searcher import CompanySearcher
+from backend.services.cache import BriefCache
 from backend.services.llm import LLMService
 from backend.services.search import SearchService
 
@@ -43,9 +44,16 @@ class ResearchPipeline:
         self.extractor = EvidenceExtractor(self.llm)
         self.analyst = CompanyAnalyst(self.llm)
         self.scorer = CompanyScorer(self.llm)
+        self.cache = BriefCache()
 
-    def research(self, query: str) -> CompanyBrief:
+    def research(self, query: str, use_cache: bool = True) -> CompanyBrief:
         start = time.time()
+
+        if use_cache:
+            cached = self.cache.get(query)
+            if cached is not None:
+                print(f"[cache] Serving cached brief for: {query}")
+                return cached
 
         print(f"[1/5] Resolving company identity: {query}")
         company, resolver_results = self.resolver.resolve(query)
@@ -99,8 +107,13 @@ class ResearchPipeline:
         print(f"       > Overall: {scores.overall_score}/10 ({scores.recommendation})")
 
         duration = time.time() - start
-        return CompanyBrief(
+        brief = CompanyBrief(
             evidence=evidence,
             analysis=analysis,
             duration_seconds=round(duration, 2),
         )
+
+        if use_cache:
+            self.cache.set(query, brief)
+
+        return brief

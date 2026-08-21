@@ -162,6 +162,8 @@ class CompanyBrief(BaseModel):
     evidence: ResearchEvidence
     analysis: CompanyAnalysis
     duration_seconds: float
+    from_cache: bool = False
+    cached_at: Optional[str] = None
 
 
 class ScoutRequest(BaseModel):
