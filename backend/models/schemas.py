@@ -165,7 +165,7 @@ class CompanyBrief(BaseModel):
 
 
 class ScoutRequest(BaseModel):
-    query: str = Field(description="Company name or website URL")
+    query: str = Field(description="Company name or website URL", min_length=1, max_length=200)
 
 
 class ScoutResponse(BaseModel):
