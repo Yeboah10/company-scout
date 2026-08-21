@@ -16,17 +16,26 @@ import json
 import os
 import sys
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from backend.pipeline.researcher import ResearchPipeline
+from backend.services.llm import QuotaExhaustedError
 
 EVAL_DIR = Path(__file__).resolve().parent
 COMPANIES_FILE = EVAL_DIR / "companies.json"
 RESULTS_DIR = EVAL_DIR / "results"
 EVALUATIONS_FILE = EVAL_DIR / "evaluations.json"
+
+# 1 resolver + ~3 extractor batches + 1 analyst + 1 scorer.
+CALLS_PER_SCOUT = 6
+DAILY_CALL_BUDGET = 20
+
+
+def _now() -> str:
+    return datetime.now(timezone.utc).isoformat()
 
 
 def load_companies(ids=None, category=None):
@@ -57,7 +66,7 @@ def run_company(company, pipeline):
             "name": company["name"],
             "category": company["category"],
             "query": company["query"],
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": _now(),
             "duration_seconds": brief.duration_seconds,
             "resolved_name": brief.evidence.company.name,
             "resolved_country": brief.evidence.company.country,
@@ -114,21 +123,60 @@ def run_company(company, pipeline):
 
         return result
 
+    except QuotaExhaustedError:
+        # Every remaining company would fail identically. Let the caller stop
+        # the run rather than recording a row of meaningless failures.
+        raise
     except Exception as e:
         return {
             "id": company["id"],
             "name": company["name"],
             "category": company["category"],
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": _now(),
             "error": str(e),
             "scores": None,
         }
 
 
+def _result_path(company_id: int, name: str) -> Path:
+    return RESULTS_DIR / f"{company_id:02d}_{name.lower().replace(' ', '_')}.json"
+
+
+def _existing_result(company_id: int, name: str) -> dict | None:
+    path = _result_path(company_id, name)
+    if not path.exists():
+        return None
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except (OSError, json.JSONDecodeError):
+        return None
+
+
+def is_complete(company) -> bool:
+    """A company counts as done only if it produced actual scores.
+
+    The evaluation spans several days of free-tier quota, so runs get
+    interrupted; anything that errored should be retried, not skipped.
+    """
+    existing = _existing_result(company["id"], company["name"])
+    return bool(existing and existing.get("scores"))
+
+
 def save_result(result):
     RESULTS_DIR.mkdir(exist_ok=True)
-    filename = f"{result['id']:02d}_{result['name'].lower().replace(' ', '_')}.json"
-    filepath = RESULTS_DIR / filename
+    filepath = _result_path(result["id"], result["name"])
+
+    # A failed rerun must never destroy a good result. Losing a successful
+    # evaluation costs a day of quota to recreate.
+    if "error" in result:
+        previous = _existing_result(result["id"], result["name"])
+        if previous and previous.get("scores"):
+            print(
+                f"  ! Keeping the previous successful result for {result['name']} "
+                f"rather than overwriting it with this failure."
+            )
+            return filepath
 
     # Save full result (without the massive brief for the summary file)
     brief_data = result.pop("brief", None)
@@ -233,6 +281,11 @@ def main():
     parser.add_argument("--id", type=int, nargs="+", help="Run specific company IDs")
     parser.add_argument("--category", type=str, help="Run a category (A/B/C/D/E)")
     parser.add_argument("--report", action="store_true", help="Print evaluation report")
+    parser.add_argument(
+        "--force",
+        action="store_true",
+        help="Re-run companies that already have a successful result",
+    )
     args = parser.parse_args()
 
     if args.report:
@@ -245,20 +298,56 @@ def main():
         print("No companies matched your filters.")
         return
 
-    print(f"\nRunning evaluation on {len(companies)} companies...\n")
+    if not args.force:
+        already_done = [c for c in companies if is_complete(c)]
+        companies = [c for c in companies if not is_complete(c)]
+        if already_done:
+            names = ", ".join(c["name"] for c in already_done)
+            print(f"\nSkipping {len(already_done)} already evaluated: {names}")
+            print("Use --force to run them again.")
+
+    if not companies:
+        print("\nEverything requested has already been evaluated.")
+        print("Run with --report to see the summary.")
+        return
+
+    # A scout costs ~6 Gemini calls against a 20/day free-tier allowance, so
+    # say up front how much of the day's budget this run wants.
+    estimated_calls = len(companies) * CALLS_PER_SCOUT
+    print(f"\nRunning evaluation on {len(companies)} companies.")
+    print(
+        f"Estimated cost: ~{estimated_calls} Gemini calls "
+        f"(~{estimated_calls / DAILY_CALL_BUDGET:.1f} days of free-tier quota).\n"
+    )
 
     pipeline = ResearchPipeline()
+    completed = 0
 
-    for company in companies:
-        result = run_company(company, pipeline)
+    for index, company in enumerate(companies):
+        try:
+            result = run_company(company, pipeline)
+        except QuotaExhaustedError as e:
+            print(f"\n{'='*70}")
+            # Plain ASCII: the Windows console encoding mangles an em-dash.
+            print("  STOPPED - daily Gemini quota exhausted")
+            print(f"{'='*70}")
+            print(f"  {e}")
+            print(f"  Completed this run: {completed} of {len(companies)}")
+            remaining = [c["name"] for c in companies[index:]]
+            print(f"  Still to do: {', '.join(remaining)}")
+            print("  Rerun the same command tomorrow; finished companies are skipped.")
+            print(f"{'='*70}\n")
+            break
+
         save_result(result)
         print_result_summary(result)
+        completed += 1
 
         # Brief pause between runs to respect rate limits
-        if company != companies[-1]:
+        if company is not companies[-1]:
             time.sleep(2)
-
-    print("\nAll evaluations complete. Run with --report to see summary.")
+    else:
+        print("\nAll evaluations complete. Run with --report to see summary.")
 
 
 if __name__ == "__main__":
