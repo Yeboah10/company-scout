@@ -508,6 +508,16 @@ body {
     color: var(--text);
 }
 
+.footer-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.download-btn.subtle {
+    opacity: 0.6;
+}
+
 .hidden {
     display: none !important;
 }
@@ -534,5 +544,71 @@ body {
     .tab {
         padding: 10px 14px;
         font-size: 0.82rem;
+    }
+}
+
+/* Print / Save as PDF.
+   The dark theme is unreadable on paper and burns ink, and only the active
+   tab is normally visible — so print flattens every panel into one document. */
+@media print {
+    :root {
+        --bg: #ffffff;
+        --bg-card: #ffffff;
+        --bg-card-hover: #ffffff;
+        --text: #000000;
+        --text-muted: #333333;
+        --text-dim: #555555;
+        --border: #cccccc;
+    }
+
+    body {
+        background: #fff;
+        color: #000;
+    }
+
+    /* Interactive chrome has no meaning on paper. */
+    .search-section,
+    .tabs,
+    .footer-actions,
+    .loading,
+    #error {
+        display: none !important;
+    }
+
+    /* Show every tab panel, not just the selected one. */
+    .tab-panel {
+        display: block !important;
+        page-break-before: auto;
+    }
+
+    .card,
+    .score-card,
+    .priority-card,
+    .person-card {
+        break-inside: avoid;
+        page-break-inside: avoid;
+        border: 1px solid #ddd;
+    }
+
+    .section {
+        break-inside: avoid-page;
+    }
+
+    h2, h3 {
+        break-after: avoid;
+        page-break-after: avoid;
+    }
+
+    /* Printed links are useless unless the URL is visible. */
+    .source-link::after {
+        content: " (" attr(href) ")";
+        font-size: 0.75rem;
+        color: #555;
+        word-break: break-all;
+    }
+
+    a {
+        text-decoration: none;
+        color: #000;
     }
 }

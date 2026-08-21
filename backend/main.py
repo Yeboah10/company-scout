@@ -6,11 +6,13 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 
 from backend.models.schemas import ScoutRequest, ScoutResponse
 from backend.pipeline.researcher import ResearchPipeline
+from backend.services.cache import BriefCache
+from backend.services.report import brief_to_markdown
 
 FRONTEND_DIR = Path(__file__).resolve().parent.parent / "frontend"
 
@@ -55,17 +57,38 @@ def _run_research(query: str):
     return pipeline.research(query)
 
 
+cache = BriefCache()
+
+
 @app.post("/scout")
 async def scout_company(request: ScoutRequest, http_request: Request):
-    if not request.query.strip():
+    query = request.query.strip()
+    if not query:
         raise HTTPException(status_code=400, detail="Company name or URL required")
+
+    # Serve cache hits before rate limiting: they cost no API quota, so there
+    # is nothing to protect against, and counting them would punish the exact
+    # behaviour we want to encourage.
+    cached = cache.get(query)
+    if cached is not None:
+        return JSONResponse(
+            content=ScoutResponse(
+                brief=cached,
+                duration_seconds=cached.duration_seconds,
+                share_key=cache.key_for(query),
+            ).model_dump(mode="json")
+        )
 
     _check_rate_limit(http_request.client.host if http_request.client else "unknown")
 
     try:
         loop = asyncio.get_event_loop()
-        brief = await loop.run_in_executor(executor, _run_research, request.query.strip())
-        response = ScoutResponse(brief=brief, duration_seconds=brief.duration_seconds)
+        brief = await loop.run_in_executor(executor, _run_research, query)
+        response = ScoutResponse(
+            brief=brief,
+            duration_seconds=brief.duration_seconds,
+            share_key=cache.key_for(query),
+        )
         return JSONResponse(content=response.model_dump(mode="json"))
     except HTTPException:
         raise
@@ -76,6 +99,44 @@ async def scout_company(request: ScoutRequest, http_request: Request):
             status_code=500,
             detail="Something went wrong while researching this company. Please try again.",
         )
+
+
+@app.get("/r/{key}")
+async def shared_report_page(key: str):
+    """Human-facing share URL. Serves the same app shell; the frontend reads
+    the key from the path and loads the report."""
+    return FileResponse(str(FRONTEND_DIR / "index.html"))
+
+
+@app.get("/report/{key}.md")
+async def report_markdown(key: str):
+    brief = cache.get_by_key(key)
+    if brief is None:
+        raise HTTPException(status_code=404, detail="Report not found or expired")
+
+    name = brief.evidence.company.name.lower().replace(" ", "_")
+    return PlainTextResponse(
+        content=brief_to_markdown(brief),
+        media_type="text/markdown; charset=utf-8",
+        headers={
+            "Content-Disposition": f'attachment; filename="scout_{name}.md"'
+        },
+    )
+
+
+@app.get("/report/{key}")
+async def report_json(key: str):
+    brief = cache.get_by_key(key)
+    if brief is None:
+        raise HTTPException(status_code=404, detail="Report not found or expired")
+
+    return JSONResponse(
+        content=ScoutResponse(
+            brief=brief,
+            duration_seconds=brief.duration_seconds,
+            share_key=key,
+        ).model_dump(mode="json")
+    )
 
 
 @app.get("/health")

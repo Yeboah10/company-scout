@@ -1,4 +1,5 @@
 let currentBrief = null;
+let currentShareKey = null;
 
 // Tab switching
 document.querySelectorAll('.tab').forEach(tab => {
@@ -77,6 +78,10 @@ async function scoutCompany(query) {
 
         const data = await response.json();
         currentBrief = data.brief;
+        currentShareKey = data.share_key || null;
+        if (currentShareKey) {
+            history.replaceState({}, '', '/r/' + currentShareKey);
+        }
         renderBrief(data.brief);
         hideLoading();
         showResults();
@@ -339,6 +344,59 @@ function esc(str) {
     div.textContent = String(str);
     return div.innerHTML;
 }
+
+async function copyShareLink() {
+    if (!currentShareKey) return;
+    const url = `${window.location.origin}/r/${currentShareKey}`;
+    const btn = document.getElementById('share-btn');
+    const original = btn.textContent;
+
+    try {
+        await navigator.clipboard.writeText(url);
+        btn.textContent = 'Link copied';
+    } catch {
+        // Clipboard API needs a secure context and permission; fall back to
+        // showing the URL so the link is never simply unavailable.
+        window.prompt('Copy this link:', url);
+        return;
+    }
+    setTimeout(() => { btn.textContent = original; }, 2000);
+}
+
+function downloadMarkdown() {
+    if (!currentShareKey) return;
+    window.location.href = `/report/${currentShareKey}.md`;
+}
+
+// A /r/{key} URL should load that saved report directly.
+async function loadSharedReport() {
+    const match = window.location.pathname.match(/^\/r\/([a-z0-9-]+)$/);
+    if (!match) return;
+
+    showLoading();
+    document.getElementById('loading-status').textContent = 'Loading saved report...';
+    try {
+        const response = await fetch(`/report/${match[1]}`);
+        if (!response.ok) {
+            throw new Error(
+                response.status === 404
+                    ? 'That report has expired or was not found. Try scouting the company again.'
+                    : 'Could not load that report.'
+            );
+        }
+        const data = await response.json();
+        currentBrief = data.brief;
+        currentShareKey = data.share_key || match[1];
+        renderBrief(data.brief);
+        hideLoading();
+        showResults();
+    } catch (err) {
+        hideLoading();
+        showError(err.message);
+    }
+}
+
+loadSharedReport();
 
 function downloadReport() {
     if (!currentBrief) return;

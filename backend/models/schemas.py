@@ -172,4 +172,5 @@ class ScoutRequest(BaseModel):
 
 class ScoutResponse(BaseModel):
     brief: CompanyBrief
+    share_key: Optional[str] = None
     duration_seconds: float

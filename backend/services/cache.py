@@ -17,8 +17,17 @@ def _normalise(query: str) -> str:
 
 
 def _key_for(query: str) -> str:
+    """A filesystem-safe, human-readable key.
+
+    Readable because it doubles as the share URL slug: "basigo" reads better
+    in a link than a hash. A short hash is appended so that two queries which
+    slugify identically (e.g. "M&A Corp" and "M A Corp") never collide, and
+    so an empty slug (a query of only punctuation) still yields a valid name.
+    """
     normalised = _normalise(query)
-    return hashlib.sha256(normalised.encode("utf-8")).hexdigest()[:32]
+    digest = hashlib.sha256(normalised.encode("utf-8")).hexdigest()[:8]
+    slug = re.sub(r"[^a-z0-9]+", "-", normalised).strip("-")[:40]
+    return f"{slug}-{digest}" if slug else digest
 
 
 class BriefCache:
@@ -37,14 +46,30 @@ class BriefCache:
         days = ttl_days if ttl_days is not None else settings.cache_ttl_days
         self.ttl_seconds = days * 86400
 
+    def key_for(self, query: str) -> str:
+        """Public accessor so callers can build share links."""
+        return _key_for(query)
+
     def _path_for(self, query: str) -> Path:
         return self.dir / f"{_key_for(query)}.json"
+
+    def get_by_key(self, key: str) -> CompanyBrief | None:
+        """Load a brief by its share key rather than the original query."""
+        if not settings.cache_enabled:
+            return None
+
+        # Guard against path traversal — this key arrives from a URL.
+        if not re.fullmatch(r"[a-z0-9-]{1,64}", key):
+            return None
+
+        return self._load(self.dir / f"{key}.json")
 
     def get(self, query: str) -> CompanyBrief | None:
         if not settings.cache_enabled:
             return None
+        return self._load(self._path_for(query))
 
-        path = self._path_for(query)
+    def _load(self, path: Path) -> CompanyBrief | None:
         if not path.exists():
             return None
 

@@ -133,7 +133,12 @@
             <!-- Footer -->
             <div class="result-footer">
                 <span id="duration"></span>
-                <button id="download-btn" class="download-btn" onclick="downloadReport()">Download JSON</button>
+                <div class="footer-actions">
+                    <button class="download-btn" onclick="copyShareLink()" id="share-btn">Copy link</button>
+                    <button class="download-btn" onclick="downloadMarkdown()">Download report</button>
+                    <button class="download-btn" onclick="window.print()">Print / PDF</button>
+                    <button class="download-btn subtle" onclick="downloadReport()">JSON</button>
+                </div>
             </div>
         </div>
     </div>
