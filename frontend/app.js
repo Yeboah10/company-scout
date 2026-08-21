@@ -52,6 +52,14 @@ async function scoutCompany(query) {
     // Mark first step active immediately
     document.getElementById('step-1').classList.add('active');
 
+    // Research can take a few minutes on the free hosting tier — reassure
+    // the user past a minute so it doesn't look stuck.
+    const patienceEl = document.getElementById('loading-patience');
+    patienceEl.classList.add('hidden');
+    const patienceTimeout = setTimeout(() => {
+        patienceEl.classList.remove('hidden');
+    }, 60000);
+
     try {
         const response = await fetch('/scout', {
             method: 'POST',
@@ -60,6 +68,7 @@ async function scoutCompany(query) {
         });
 
         clearInterval(stepInterval);
+        clearTimeout(patienceTimeout);
 
         if (!response.ok) {
             const err = await response.json().catch(() => ({}));
@@ -74,6 +83,7 @@ async function scoutCompany(query) {
 
     } catch (err) {
         clearInterval(stepInterval);
+        clearTimeout(patienceTimeout);
         hideLoading();
         showError(err.message);
     } finally {

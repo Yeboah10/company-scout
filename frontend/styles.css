@@ -157,6 +157,13 @@ body {
     color: var(--green);
 }
 
+.loading-patience {
+    margin-top: 20px;
+    font-size: 0.85rem;
+    color: var(--text-dim);
+    font-style: italic;
+}
+
 /* Error */
 .error {
     text-align: center;
