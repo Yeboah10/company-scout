@@ -13,6 +13,12 @@ from backend.models.schemas import CompanyBrief
 _SAFE_KEY = re.compile(r"[a-z0-9-]{1,64}")
 
 
+def _log(message: str) -> None:
+    # flush because Render pipes stdout, where print() is block-buffered and
+    # these lines would otherwise never surface in the logs.
+    print(f"[cache] {message}", flush=True)
+
+
 def _normalise(query: str) -> str:
     """Collapse cosmetic differences so "BasiGo", "basigo " and "Basi  Go"
     all hit the same cache entry."""
@@ -74,20 +80,24 @@ class _RedisBackend:
             socket_timeout=5,
             socket_connect_timeout=5,
         )
+        # from_url only parses the URL; it connects lazily. Ping so an
+        # unreachable host fails here and falls back to disk, rather than
+        # failing on every read and write for the life of the process.
+        self.client.ping()
 
     def read(self, key: str) -> str | None:
         try:
             return self.client.get(f"brief:{key}")
         except Exception as e:
             # A cache outage must degrade to a slow lookup, never an error.
-            print(f"[cache] Redis read failed: {e}")
+            _log(f"Redis read failed: {e}")
             return None
 
     def write(self, key: str, payload: str, ttl_seconds: int) -> None:
         try:
             self.client.setex(f"brief:{key}", ttl_seconds, payload)
         except Exception as e:
-            print(f"[cache] Redis write failed: {e}")
+            _log(f"Redis write failed: {e}")
 
 
 class BriefCache:
@@ -117,12 +127,15 @@ class BriefCache:
         if url:
             try:
                 self.backend = _RedisBackend(url)
-                print("[cache] Using Render Key Value for persistent caching")
+                _log("Using Render Key Value for persistent caching")
             except Exception as e:
                 # Missing package or bad URL shouldn't take the app down.
-                print(f"[cache] Redis unavailable ({e}); falling back to disk")
+                _log(f"Redis unavailable ({e}); falling back to disk")
                 self.backend = _FileBackend(directory)
         else:
+            # Silence here would be indistinguishable from a working Redis, and
+            # on Render this backend quietly loses every report on restart.
+            _log(f"No REDIS_URL set; caching to disk at {directory}")
             self.backend = _FileBackend(directory)
 
     def key_for(self, query: str) -> str:
