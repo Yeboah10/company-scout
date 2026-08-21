@@ -27,30 +27,7 @@ async function scoutCompany(query) {
     const btn = document.getElementById('scout-btn');
     btn.disabled = true;
 
-    // Animate loading steps
     const steps = [1, 2, 3, 4, 5];
-    let stepIndex = 0;
-    const stepMessages = [
-        'Resolving company identity...',
-        'Searching for evidence...',
-        'Extracting structured evidence...',
-        'Analysing strategic signals...',
-        'Scoring opportunity...'
-    ];
-
-    const stepInterval = setInterval(() => {
-        if (stepIndex < steps.length) {
-            if (stepIndex > 0) {
-                document.getElementById('step-' + steps[stepIndex - 1]).classList.remove('active');
-                document.getElementById('step-' + steps[stepIndex - 1]).classList.add('done');
-            }
-            document.getElementById('step-' + steps[stepIndex]).classList.add('active');
-            document.getElementById('loading-status').textContent = stepMessages[stepIndex];
-            stepIndex++;
-        }
-    }, 15000);
-
-    // Mark first step active immediately
     document.getElementById('step-1').classList.add('active');
 
     // Research can take a few minutes on the free hosting tier — reassure
@@ -62,21 +39,25 @@ async function scoutCompany(query) {
     }, 60000);
 
     try {
-        const response = await fetch('/scout', {
+        const started = await fetch('/scout', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ query })
         });
 
-        clearInterval(stepInterval);
-        clearTimeout(patienceTimeout);
-
-        if (!response.ok) {
-            const err = await response.json().catch(() => ({}));
+        if (!started.ok) {
+            const err = await started.json().catch(() => ({}));
             throw new Error(err.detail || 'Research failed. Please try again.');
         }
 
-        const data = await response.json();
+        const job = await started.json();
+
+        // A cached report comes back complete, with no job to poll.
+        const data = job.result
+            ? job.result
+            : await pollUntilDone(job.id);
+
+        clearTimeout(patienceTimeout);
         currentBrief = data.brief;
         currentShareKey = data.share_key || null;
         if (currentShareKey) {
@@ -87,17 +68,62 @@ async function scoutCompany(query) {
         showResults();
 
     } catch (err) {
-        clearInterval(stepInterval);
         clearTimeout(patienceTimeout);
         hideLoading();
         showError(err.message);
     } finally {
         btn.disabled = false;
-        // Reset step states
         steps.forEach(s => {
             const el = document.getElementById('step-' + s);
             el.classList.remove('active', 'done');
         });
+    }
+}
+
+// The scout itself runs on the server, well past the ~100s the proxy will
+// hold a request open. Poll for its progress instead of waiting on one call.
+async function pollUntilDone(jobId) {
+    const POLL_INTERVAL_MS = 3000;
+
+    while (true) {
+        await new Promise(r => setTimeout(r, POLL_INTERVAL_MS));
+
+        let response;
+        try {
+            response = await fetch(`/scout/status/${jobId}`);
+        } catch {
+            // A dropped poll is normal on flaky connections; the job keeps
+            // running on the server, so try again rather than giving up.
+            continue;
+        }
+
+        if (response.status === 404) {
+            throw new Error('That research job has expired. Please try again.');
+        }
+        if (!response.ok) continue;
+
+        const job = await response.json();
+        updateProgress(job);
+
+        if (job.status === 'done' && job.result) return job.result;
+        if (job.status === 'error') {
+            throw new Error(job.error || 'Research failed. Please try again.');
+        }
+    }
+}
+
+// Drive the step indicator from the server's actual stage rather than a timer,
+// so the display cannot drift away from what is really happening.
+function updateProgress(job) {
+    if (job.message) {
+        document.getElementById('loading-status').textContent = job.message;
+    }
+    for (let s = 1; s <= 5; s++) {
+        const el = document.getElementById('step-' + s);
+        if (!el) continue;
+        el.classList.remove('active', 'done');
+        if (s < job.stage) el.classList.add('done');
+        else if (s === job.stage) el.classList.add('active');
     }
 }
 

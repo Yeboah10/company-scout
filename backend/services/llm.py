@@ -8,6 +8,25 @@ from google.genai import errors as genai_errors
 from backend.config import settings
 
 
+class QuotaExhaustedError(Exception):
+    """The daily free-tier allowance is spent.
+
+    Distinct from ordinary rate limiting because waiting cannot help: the
+    quota resets on a daily boundary, not in seconds.
+    """
+
+
+def _is_daily_quota_error(message: str) -> bool:
+    """Tell a spent daily allowance apart from per-minute throttling.
+
+    Both surface as HTTP 429, but only one is worth waiting out. Google names
+    the specific quota in the error body, e.g.
+    "GenerateRequestsPerDayPerProjectPerModel-FreeTier".
+    """
+    lowered = message.lower()
+    return "perday" in lowered or "requests_per_day" in lowered
+
+
 class LLMService:
     def __init__(self):
         self.client = genai.Client(api_key=settings.google_api_key)
@@ -17,6 +36,10 @@ class LLMService:
         for attempt in range(retries + 1):
             try:
                 response = self._call_with_rate_limit_retry(system_prompt, user_prompt)
+            except QuotaExhaustedError:
+                # Retrying cannot succeed, and each attempt costs the caller
+                # another wait for nothing.
+                raise
             except Exception:
                 if attempt < retries:
                     continue
@@ -47,11 +70,24 @@ class LLMService:
                     ),
                 )
             except genai_errors.ClientError as e:
-                if "429" in str(e) and wait_attempt < max_waits:
-                    wait_time = 20 * (wait_attempt + 1)
-                    print(f"       Rate limited. Waiting {wait_time}s before retry...")
-                    time.sleep(wait_time)
-                    continue
+                message = str(e)
+                if "429" in message:
+                    # Waiting out a spent daily allowance just burns minutes:
+                    # three backoffs per call, several calls per run, all
+                    # doomed. Fail immediately so the caller can say so.
+                    if _is_daily_quota_error(message):
+                        raise QuotaExhaustedError(
+                            "The daily Gemini free-tier allowance (20 requests) is "
+                            "used up. It resets at midnight Pacific time."
+                        ) from e
+                    if wait_attempt < max_waits:
+                        wait_time = 20 * (wait_attempt + 1)
+                        print(
+                            f"       Rate limited. Waiting {wait_time}s before retry...",
+                            flush=True,
+                        )
+                        time.sleep(wait_time)
+                        continue
                 raise
 
 

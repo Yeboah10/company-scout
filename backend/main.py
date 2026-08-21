@@ -1,4 +1,3 @@
-import asyncio
 import time
 import traceback
 from collections import defaultdict
@@ -10,8 +9,10 @@ from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 
 from backend.models.schemas import ScoutRequest, ScoutResponse
-from backend.pipeline.researcher import ResearchPipeline
+from backend.pipeline.researcher import InsufficientEvidenceError, ResearchPipeline
 from backend.services.cache import BriefCache
+from backend.services.jobs import TOTAL_STAGES, JobStore
+from backend.services.llm import QuotaExhaustedError
 from backend.services.report import brief_to_markdown
 
 FRONTEND_DIR = Path(__file__).resolve().parent.parent / "frontend"
@@ -52,12 +53,53 @@ async def index():
     return FileResponse(str(FRONTEND_DIR / "index.html"))
 
 
-def _run_research(query: str):
-    pipeline = ResearchPipeline()
-    return pipeline.research(query)
-
-
 cache = BriefCache()
+jobs = JobStore()
+
+
+def _run_job(job_id: str, query: str) -> None:
+    """Run a scout to completion, recording progress against the job.
+
+    Runs on a worker thread, so nothing here may raise into the caller: every
+    outcome is written back onto the job for the client to poll.
+    """
+    def progress(stage: int, message: str) -> None:
+        jobs.update(job_id, stage=stage, message=message)
+
+    try:
+        pipeline = ResearchPipeline()
+        pipeline.research(query, progress=progress)
+        jobs.update(
+            job_id,
+            status="done",
+            stage=TOTAL_STAGES,
+            message="Report ready",
+        )
+    except InsufficientEvidenceError as e:
+        jobs.update(
+            job_id,
+            status="error",
+            error_kind="no_evidence",
+            error=str(e),
+        )
+    except QuotaExhaustedError as e:
+        # Expected often enough on the free tier to deserve its own message
+        # rather than a generic failure.
+        print(f"[scout] Quota exhausted for query: {query}", flush=True)
+        jobs.update(
+            job_id,
+            status="error",
+            error_kind="quota_exhausted",
+            error=str(e),
+        )
+    except Exception:
+        print(f"ERROR in scout job: {traceback.format_exc()}", flush=True)
+        jobs.update(
+            job_id,
+            status="error",
+            error_kind="failed",
+            error="Something went wrong while researching this company. Please try again.",
+        )
 
 
 @app.post("/scout")
@@ -66,39 +108,63 @@ async def scout_company(request: ScoutRequest, http_request: Request):
     if not query:
         raise HTTPException(status_code=400, detail="Company name or URL required")
 
+    share_key = cache.key_for(query)
+
     # Serve cache hits before rate limiting: they cost no API quota, so there
     # is nothing to protect against, and counting them would punish the exact
     # behaviour we want to encourage.
     cached = cache.get(query)
     if cached is not None:
         return JSONResponse(
-            content=ScoutResponse(
-                brief=cached,
-                duration_seconds=cached.duration_seconds,
-                share_key=cache.key_for(query),
-            ).model_dump(mode="json")
+            content={
+                "status": "done",
+                "share_key": share_key,
+                "result": ScoutResponse(
+                    brief=cached,
+                    duration_seconds=cached.duration_seconds,
+                    share_key=share_key,
+                ).model_dump(mode="json"),
+            }
         )
 
     _check_rate_limit(http_request.client.host if http_request.client else "unknown")
 
-    try:
-        loop = asyncio.get_event_loop()
-        brief = await loop.run_in_executor(executor, _run_research, query)
-        response = ScoutResponse(
-            brief=brief,
-            duration_seconds=brief.duration_seconds,
-            share_key=cache.key_for(query),
-        )
-        return JSONResponse(content=response.model_dump(mode="json"))
-    except HTTPException:
-        raise
-    except Exception:
-        tb = traceback.format_exc()
-        print(f"ERROR in /scout: {tb}")
+    # A scout takes minutes, and the proxy in front of this app abandons any
+    # request left unanswered for ~100 seconds. So hand back a job to poll
+    # rather than holding the connection open and losing it.
+    job = jobs.create(query, share_key=share_key)
+    executor.submit(_run_job, job.id, query)
+
+    return JSONResponse(status_code=202, content={"status": "running", **job.as_dict()})
+
+
+@app.get("/scout/status/{job_id}")
+async def scout_status(job_id: str):
+    job = jobs.get(job_id)
+    if job is None:
         raise HTTPException(
-            status_code=500,
-            detail="Something went wrong while researching this company. Please try again.",
+            status_code=404,
+            detail="That research job has expired. Please scout the company again.",
         )
+
+    payload = job.as_dict()
+
+    # Attach the finished brief so the client needs only this one endpoint.
+    if job.status == "done" and job.share_key:
+        brief = cache.get_by_key(job.share_key)
+        if brief is not None:
+            payload["result"] = ScoutResponse(
+                brief=brief,
+                duration_seconds=brief.duration_seconds,
+                share_key=job.share_key,
+            ).model_dump(mode="json")
+        else:
+            # The run finished but the brief did not survive to the cache.
+            payload["status"] = "error"
+            payload["error_kind"] = "failed"
+            payload["error"] = "The report could not be saved. Please try again."
+
+    return JSONResponse(content=payload)
 
 
 @app.get("/r/{key}")

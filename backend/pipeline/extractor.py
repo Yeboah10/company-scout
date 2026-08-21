@@ -7,7 +7,7 @@ from backend.models.schemas import (
     Source,
     SourceQuality,
 )
-from backend.services.llm import LLMService
+from backend.services.llm import LLMService, QuotaExhaustedError
 
 SYSTEM_PROMPT = """You are an evidence extraction specialist for a company research tool focused on African companies and markets.
 
@@ -76,9 +76,14 @@ class EvidenceExtractor:
         for batch in batches:
             try:
                 chunks.append(self._extract_chunk(company, batch))
+            except QuotaExhaustedError:
+                # Every remaining batch would fail the same way, and a brief
+                # built on partial evidence reads exactly as confident as one
+                # built on all of it. Abort rather than quietly under-report.
+                raise
             except Exception as e:
                 # Losing one batch costs some evidence but shouldn't fail the run.
-                print(f"       ! Extraction failed for a batch: {e}")
+                print(f"       ! Extraction failed for a batch: {e}", flush=True)
                 chunks.append(([], []))
 
         all_claims = []

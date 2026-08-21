@@ -1,4 +1,5 @@
 import time
+from typing import Callable
 
 from backend.models.schemas import CompanyBrief, ResearchEvidence, Source, SourceQuality
 from backend.pipeline.analyst import CompanyAnalyst
@@ -9,6 +10,10 @@ from backend.pipeline.searcher import CompanySearcher
 from backend.services.cache import BriefCache
 from backend.services.llm import LLMService
 from backend.services.search import SearchService
+
+
+class InsufficientEvidenceError(Exception):
+    """Nothing usable was found, so there is no honest brief to write."""
 
 
 def _classify_source_quality(url: str, publisher: str | None) -> SourceQuality:
@@ -46,27 +51,53 @@ class ResearchPipeline:
         self.scorer = CompanyScorer(self.llm)
         self.cache = BriefCache()
 
-    def research(self, query: str, use_cache: bool = True) -> CompanyBrief:
+    def research(
+        self,
+        query: str,
+        use_cache: bool = True,
+        progress: Callable[[int, str], None] | None = None,
+    ) -> CompanyBrief:
+        """Research a company end to end.
+
+        `progress`, when given, is called as each stage begins so a caller
+        polling from outside can report real progress rather than guessing
+        from a timer.
+        """
         start = time.time()
+
+        def report(stage: int, message: str) -> None:
+            print(f"[{stage}/5] {message}", flush=True)
+            if progress is not None:
+                progress(stage, message)
 
         if use_cache:
             cached = self.cache.get(query)
             if cached is not None:
-                print(f"[cache] Serving cached brief for: {query}")
+                print(f"[cache] Serving cached brief for: {query}", flush=True)
                 return cached
 
-        print(f"[1/5] Resolving company identity: {query}")
+        report(1, "Resolving company identity...")
         company, resolver_results = self.resolver.resolve(query)
-        print(f"       > {company.name} ({company.country or 'unknown country'})")
+        print(f"       > {company.name} ({company.country or 'unknown country'})", flush=True)
 
-        print(f"[2/5] Searching for evidence...")
+        report(2, "Searching for evidence...")
         search_results = self.searcher.search_company(company)
         all_results = resolver_results + search_results
-        print(f"       > {len(all_results)} unique sources found")
+        print(f"       > {len(all_results)} unique sources found", flush=True)
 
-        print(f"[3/5] Extracting structured evidence...")
+        report(3, "Extracting structured evidence...")
         claims, people = self.extractor.extract(company, all_results)
-        print(f"       > {len(claims)} claims, {len(people)} people extracted")
+        print(f"       > {len(claims)} claims, {len(people)} people extracted", flush=True)
+
+        # Analysis and scoring will happily produce confident-sounding prose
+        # from nothing at all. If extraction came back empty, the honest
+        # answer is that we found nothing — not a brief that looks researched.
+        if not claims and not people:
+            raise InsufficientEvidenceError(
+                f"No usable evidence could be extracted for '{company.name}'. "
+                "The company may be too small or too new to have a public record, "
+                "or the name may need to be more specific."
+            )
 
         sources = []
         seen = set()
@@ -97,14 +128,21 @@ class ResearchPipeline:
             raw_search_results=all_results,
         )
 
-        print(f"[4/5] Analysing strategic signals and opportunities...")
+        report(4, "Analysing strategic signals and opportunities...")
         analysis = self.analyst.analyse(evidence)
-        print(f"       > {len(analysis.signals)} signals, {len(analysis.story_angles)} story angles")
+        print(
+            f"       > {len(analysis.signals)} signals, "
+            f"{len(analysis.story_angles)} story angles",
+            flush=True,
+        )
 
-        print(f"[5/5] Scoring opportunity...")
+        report(5, "Scoring opportunity...")
         scores = self.scorer.score(evidence, analysis)
         analysis.scores = scores
-        print(f"       > Overall: {scores.overall_score}/10 ({scores.recommendation})")
+        print(
+            f"       > Overall: {scores.overall_score}/10 ({scores.recommendation})",
+            flush=True,
+        )
 
         duration = time.time() - start
         brief = CompanyBrief(

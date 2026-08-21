@@ -47,6 +47,18 @@
 - [x] Replace JSON download with Markdown in web UI and CLI
 - [x] Cache hits no longer count against the rate limit
 
+## Sprint 7 — Long-running scouts
+- [x] Background job + polling (`POST /scout` -> 202, `GET /scout/status/{id}`)
+- [x] Real stage progress from the pipeline instead of a 15s timer
+- [x] Fail fast on daily quota exhaustion instead of 6 minutes of backoff
+- [x] Abort rather than build a brief from zero extracted evidence
+- [x] Flush pipeline logs so Render actually shows them
+
+The web service sits behind a proxy that abandons any request unanswered
+after ~100s; a scout takes 255-317s. Measured before the fix: a request to
+the live site hung for **363s and returned no status at all**. Every fresh
+scout from the browser failed this way — only cached reports worked.
+
 ## Known constraint — Gemini free tier quota
 A full scout costs ~6 Gemini calls (1 resolver + ~3 extractor batches +
 1 analyst + 1 scorer). The free tier allows 20 calls/day, so roughly
