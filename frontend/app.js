@@ -1,6 +1,103 @@
 let currentBrief = null;
 let currentShareKey = null;
 
+/* ---------- Theme ---------- */
+
+// The <head> script has already applied any saved choice; this only decides
+// which icon to show and handles switching.
+function currentTheme() {
+    const explicit = document.documentElement.getAttribute('data-theme');
+    if (explicit) return explicit;
+    return window.matchMedia('(prefers-color-scheme: light)').matches
+        ? 'light'
+        : 'dark';
+}
+
+function paintThemeToggle() {
+    const btn = document.getElementById('theme-toggle');
+    if (!btn) return;
+    // Show where the click leads, not where you already are.
+    btn.textContent = currentTheme() === 'dark' ? '☀' : '☾';
+}
+
+function toggleTheme() {
+    const next = currentTheme() === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    try {
+        localStorage.setItem('scout-theme', next);
+    } catch {
+        // Private mode: the choice still applies for this page view.
+    }
+    paintThemeToggle();
+}
+
+document.getElementById('theme-toggle')?.addEventListener('click', toggleTheme);
+
+// Follow the OS while the visitor has expressed no preference of their own.
+window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', () => {
+    if (!document.documentElement.getAttribute('data-theme')) paintThemeToggle();
+});
+
+paintThemeToggle();
+
+/* ---------- Changelog ---------- */
+
+function renderChangelog() {
+    const body = document.getElementById('changelog-body');
+    if (!body || typeof CHANGELOG === 'undefined') return;
+
+    body.innerHTML = CHANGELOG.map(entry => `
+        <div class="changelog-entry">
+            <div class="changelog-version">
+                <strong>v${escapeHtml(entry.version)}</strong>
+                <span class="changelog-date">${escapeHtml(entry.date)}</span>
+            </div>
+            <ul>
+                ${entry.changes.map(c => `<li>${escapeHtml(c)}</li>`).join('')}
+            </ul>
+        </div>
+    `).join('');
+}
+
+function openChangelog() {
+    renderChangelog();
+    document.getElementById('changelog-panel')?.classList.remove('hidden');
+    document.getElementById('changelog-backdrop')?.classList.remove('hidden');
+    document.getElementById('changelog-toggle')?.setAttribute('aria-expanded', 'true');
+}
+
+function closeChangelog() {
+    document.getElementById('changelog-panel')?.classList.add('hidden');
+    document.getElementById('changelog-backdrop')?.classList.add('hidden');
+    document.getElementById('changelog-toggle')?.setAttribute('aria-expanded', 'false');
+}
+
+document.getElementById('changelog-toggle')?.addEventListener('click', () => {
+    const panel = document.getElementById('changelog-panel');
+    if (panel?.classList.contains('hidden')) openChangelog();
+    else closeChangelog();
+});
+document.getElementById('changelog-close')?.addEventListener('click', closeChangelog);
+document.getElementById('changelog-backdrop')?.addEventListener('click', closeChangelog);
+document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeChangelog();
+});
+
+if (typeof APP_VERSION !== 'undefined') {
+    const label = document.getElementById('version-label');
+    if (label) label.textContent = 'v' + APP_VERSION;
+}
+
+/* ---------- Example chips ---------- */
+
+document.querySelectorAll('.example-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+        const query = chip.dataset.q;
+        document.getElementById('company-input').value = query;
+        scoutCompany(query);
+    });
+});
+
 // Tab switching
 document.querySelectorAll('.tab').forEach(tab => {
     tab.addEventListener('click', () => {
@@ -440,9 +537,22 @@ async function loadSharedReport() {
 
 loadSharedReport();
 
-function showLoading() { document.getElementById('loading').classList.remove('hidden'); }
+function escapeHtml(value) {
+    const div = document.createElement('div');
+    div.textContent = value == null ? '' : String(value);
+    return div.innerHTML;
+}
+
+// The intro cards are a first-run explanation. Once there is something real
+// on screen they are just noise above it.
+function hideIntro() {
+    document.getElementById('intro')?.classList.add('hidden');
+    document.getElementById('examples')?.classList.add('hidden');
+}
+
+function showLoading() { hideIntro(); document.getElementById('loading').classList.remove('hidden'); }
 function hideLoading() { document.getElementById('loading').classList.add('hidden'); }
-function showResults() { document.getElementById('results').classList.remove('hidden'); }
+function showResults() { hideIntro(); document.getElementById('results').classList.remove('hidden'); }
 function hideResults() { document.getElementById('results').classList.add('hidden'); }
 function showError(msg) {
     document.getElementById('error-message').textContent = msg;

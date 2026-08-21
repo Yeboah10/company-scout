@@ -5,11 +5,30 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Company Scout</title>
     <link rel="stylesheet" href="/static/styles.css">
+    <script>
+        // Applied before first paint: setting this from app.js would show a
+        // flash of the wrong theme while the stylesheet and script load.
+        // Storage can throw in private mode, so a failure must fall through
+        // to the OS preference rather than break the page.
+        try {
+            var saved = localStorage.getItem('scout-theme');
+            if (saved === 'light' || saved === 'dark') {
+                document.documentElement.setAttribute('data-theme', saved);
+            }
+        } catch (e) {}
+    </script>
 </head>
 <body>
     <div id="app">
         <!-- Header -->
         <header class="header">
+            <button
+                id="theme-toggle"
+                class="theme-toggle"
+                type="button"
+                title="Switch between light and dark"
+                aria-label="Switch between light and dark"
+            ></button>
             <h1 class="logo">Company Scout</h1>
             <p class="tagline">Find out whether a company is worth your time.</p>
         </header>
@@ -27,6 +46,32 @@
                 />
                 <button type="submit" id="scout-btn" class="scout-btn">Scout</button>
             </form>
+            <div id="examples" class="examples">
+                <span class="examples-label">Try</span>
+                <button class="example-chip" type="button" data-q="Spiro">Spiro</button>
+                <button class="example-chip" type="button" data-q="BasiGo">BasiGo</button>
+                <button class="example-chip" type="button" data-q="Flutterwave">Flutterwave</button>
+                <button class="example-chip" type="button" data-q="Moniepoint">Moniepoint</button>
+            </div>
+        </div>
+
+        <!-- What you get: only shown before a report exists -->
+        <div id="intro" class="intro">
+            <div class="intro-card">
+                <span class="intro-icon">◆</span>
+                <h3>Evidence, not vibes</h3>
+                <p>Every claim is traced to a dated source you can check.</p>
+            </div>
+            <div class="intro-card">
+                <span class="intro-icon">◆</span>
+                <h3>A number that means something</h3>
+                <p>Scored across story, case study, outreach and research — and it will tell you to skip.</p>
+            </div>
+            <div class="intro-card">
+                <span class="intro-icon">◆</span>
+                <h3>Recency counts</h3>
+                <p>A company that has gone quiet for three years scores like one.</p>
+            </div>
         </div>
 
         <!-- Loading -->
@@ -143,6 +188,24 @@
         </div>
     </div>
 
+    <!-- Version / changelog -->
+    <footer class="site-footer">
+        <button id="changelog-toggle" class="changelog-toggle" type="button" aria-expanded="false">
+            <span class="changelog-dot"></span>
+            <span id="version-label">v0.0.0</span>
+        </button>
+    </footer>
+
+    <div id="changelog-panel" class="changelog-panel hidden" role="dialog" aria-label="What's changed">
+        <div class="changelog-head">
+            <h3>What&rsquo;s changed</h3>
+            <button id="changelog-close" class="changelog-close" type="button" aria-label="Close">&times;</button>
+        </div>
+        <div id="changelog-body" class="changelog-body"></div>
+    </div>
+    <div id="changelog-backdrop" class="changelog-backdrop hidden"></div>
+
+    <script src="/static/changelog.js"></script>
     <script src="/static/app.js"></script>
 </body>
 </html>
