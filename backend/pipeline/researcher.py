@@ -45,16 +45,16 @@ class ResearchPipeline:
 
         print(f"[1/3] Resolving company identity: {query}")
         company, resolver_results = self.resolver.resolve(query)
-        print(f"       → {company.name} ({company.country or 'unknown country'})")
+        print(f"       > {company.name} ({company.country or 'unknown country'})")
 
         print(f"[2/3] Searching for evidence...")
         search_results = self.searcher.search_company(company)
         all_results = resolver_results + search_results
-        print(f"       → {len(all_results)} unique sources found")
+        print(f"       > {len(all_results)} unique sources found")
 
         print(f"[3/3] Extracting structured evidence...")
         claims, people = self.extractor.extract(company, all_results)
-        print(f"       → {len(claims)} claims, {len(people)} people extracted")
+        print(f"       > {len(claims)} claims, {len(people)} people extracted")
 
         sources = []
         seen = set()
