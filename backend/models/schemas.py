@@ -172,12 +172,60 @@ class CompanyAnalysis(BaseModel):
     scores: Optional[OpportunityScores] = None
 
 
+class FoundEmail(BaseModel):
+    """An address published somewhere public, with the page that published it."""
+    email: str
+    kind: str = "personal"          # "personal" | "role"
+    source_url: Optional[str] = None
+    person: Optional[str] = None
+
+
+class InferredEmail(BaseModel):
+    """A guess built from the company's observed address format.
+
+    Kept in a separate list from found addresses, rather than flagged inside a
+    shared one, so nothing downstream can render a guess as a fact by
+    forgetting to check a boolean.
+    """
+    person: str
+    email: str
+    pattern: str
+
+
+class LinkedInProfile(BaseModel):
+    """A LinkedIn lookup result — found or not.
+
+    Every named person gets an entry either way. "We looked and found nothing"
+    is information: it tells the user to search manually rather than assume the
+    person has no profile. `search_url` makes that one click.
+
+    Only URLs are ever collected. LinkedIn pages are not fetched.
+    """
+    person: Optional[str] = None
+    role: Optional[str] = None
+    url: Optional[str] = None
+    search_url: Optional[str] = None
+    found: bool = False
+    is_company_page: bool = False
+
+
+class ContactInfo(BaseModel):
+    company_domain: Optional[str] = None
+    pattern: Optional[str] = None
+    found: list[FoundEmail] = Field(default_factory=list)
+    inferred: list[InferredEmail] = Field(default_factory=list)
+    linkedin: list[LinkedInProfile] = Field(default_factory=list)
+    note: str = ""
+
+
 class CompanyBrief(BaseModel):
     evidence: ResearchEvidence
     analysis: CompanyAnalysis
     duration_seconds: float
     from_cache: bool = False
     cached_at: Optional[str] = None
+    # Optional so briefs cached before contact discovery existed still load.
+    contacts: Optional[ContactInfo] = None
 
 
 class ScoutRequest(BaseModel):

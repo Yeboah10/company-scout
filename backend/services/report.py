@@ -75,6 +75,48 @@ def brief_to_markdown(brief: CompanyBrief) -> str:
                 f"(x{scores.recency_factor:g}). {note}\n\n"
             )
 
+    contacts = getattr(brief, "contacts", None)
+    if contacts and (contacts.found or contacts.inferred):
+        out.append("## Contacts\n\n")
+
+        if contacts.found:
+            out.append("### Published\n\n")
+            for f in contacts.found:
+                label = "team inbox" if f.kind == "role" else "person"
+                who = f" — {f.person}" if f.person else ""
+                out.append(f"- **{f.email}** ({label}){who}\n")
+                if f.source_url:
+                    out.append(f"  - Source: {f.source_url}\n")
+            out.append("\n")
+
+        # Heading carries the warning, so the caveat cannot be separated from
+        # the addresses by someone copying just this section.
+        if contacts.inferred:
+            out.append("### Likely addresses — INFERRED, NOT VERIFIED\n\n")
+            out.append(
+                "These are guesses built from the pattern above. They have not "
+                "been confirmed to exist and may reach the wrong person.\n\n"
+            )
+            for i in contacts.inferred:
+                out.append(f"- {i.email} — {i.person} (pattern `{i.pattern}`)\n")
+            out.append("\n")
+
+        if contacts.linkedin:
+            out.append("### LinkedIn\n\n")
+            for l in contacts.linkedin:
+                who = "Company page" if l.is_company_page else (l.person or "Unknown")
+                role = f" ({l.role})" if l.role else ""
+                if l.found:
+                    out.append(f"- {who}{role}: {l.url}\n")
+                else:
+                    # Stated explicitly, so the reader knows to look manually
+                    # rather than concluding there is no profile.
+                    out.append(f"- {who}{role}: not found — search: {l.search_url}\n")
+            out.append("\n")
+
+        if contacts.note:
+            out.append(f"{contacts.note}\n\n")
+
     if analysis.top_priorities:
         out.append("## Top Priorities\n\n")
         for i, p in enumerate(analysis.top_priorities, 1):

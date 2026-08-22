@@ -1116,3 +1116,67 @@ body {
         display: none !important;
     }
 }
+
+/* Contacts */
+.contact-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.contact-kind {
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.contact-kind.personal { background: rgba(34, 197, 94, 0.15); color: var(--green); }
+.contact-kind.role     { background: rgba(59, 130, 246, 0.15); color: var(--blue); }
+.contact-kind.guess    { background: rgba(234, 179, 8, 0.18);  color: var(--yellow); }
+
+.contact-email {
+    font-weight: 600;
+    color: var(--text);
+    text-decoration: none;
+}
+
+a.contact-email:hover { color: var(--accent); text-decoration: underline; }
+
+.contact-person {
+    margin-top: 6px;
+    color: var(--text-muted);
+    font-size: 0.83rem;
+}
+
+/* A dashed, warm-toned border so a guess never reads as a confirmed address
+   even at a glance. */
+.contact-card.inferred {
+    border-style: dashed;
+    border-color: var(--yellow);
+    background: rgba(234, 179, 8, 0.04);
+}
+
+.contacts-note {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    line-height: 1.6;
+}
+
+.contact-card code {
+    font-size: 0.8rem;
+    padding: 1px 5px;
+    border-radius: 4px;
+    background: var(--bg-card-hover);
+}
+
+.contact-kind.missing { background: rgba(107, 114, 128, 0.18); color: var(--text-dim); }
+
+/* Muted rather than alarming: a missing profile is information, not a fault. */
+.contact-card.not-found {
+    border-style: dashed;
+    opacity: 0.85;
+}

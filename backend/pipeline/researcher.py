@@ -11,11 +11,17 @@ from backend.models.schemas import (
 from backend.pipeline.analyst import CompanyAnalyst
 from backend.pipeline.extractor import EvidenceExtractor
 from backend.pipeline.resolver import CompanyResolver
+from backend.pipeline.prospector import Prospector
 from backend.pipeline.scorer import CompanyScorer
 from backend.pipeline.searcher import CompanySearcher
 from backend.services.cache import BriefCache
 from backend.services.llm import LLMService
 from backend.services.search import SearchService
+from backend.services.sources import (
+    AFRICAN_TECH_PRESS,
+    TIER_1_SIGNALS,
+    is_press_release,
+)
 
 
 class InsufficientEvidenceError(Exception):
@@ -23,24 +29,23 @@ class InsufficientEvidenceError(Exception):
 
 
 def _classify_source_quality(url: str, publisher: str | None) -> SourceQuality:
-    url_lower = url.lower()
-    pub_lower = (publisher or "").lower()
+    combined = f"{url} {publisher or ''}".lower()
 
-    tier_1_signals = [
-        "gov.", ".gov", "sec.gov", "investor", "annual-report",
-        "regulatory", "filing",
-    ]
+    # Checked first: a wire carrying a company's own announcement is not
+    # independent reporting, however authoritative the domain looks.
+    if is_press_release(url, publisher):
+        return SourceQuality.TIER_3
+
+    if any(s in combined for s in TIER_1_SIGNALS):
+        return SourceQuality.TIER_1
+
     tier_2_signals = [
         "reuters", "bloomberg", "techcrunch", "ft.com", "bbc",
-        "cnbc", "forbes", "techpoint", "disrupt-africa", "techcabal",
-        "ventureburn", "africanews", "theafricareport", "stears",
-        "businessday", "guardian.ng", "nation.africa",
-    ]
+        "cnbc", "forbes", "africanews", "guardian.ng", "premiumtimesng",
+        "thecable.ng", "citinewsroom", "myjoyonline", "graphic.com.gh",
+        "businessinsider", "quartz", "cnn", "aljazeera",
+    ] + [d.split(".")[0] for d in AFRICAN_TECH_PRESS]
 
-    combined = url_lower + " " + pub_lower
-
-    if any(s in combined for s in tier_1_signals):
-        return SourceQuality.TIER_1
     if any(s in combined for s in tier_2_signals):
         return SourceQuality.TIER_2
     return SourceQuality.TIER_3
@@ -55,6 +60,7 @@ class ResearchPipeline:
         self.extractor = EvidenceExtractor(self.llm)
         self.analyst = CompanyAnalyst(self.llm)
         self.scorer = CompanyScorer(self.llm)
+        self.prospector = Prospector(self.search)
         self.cache = BriefCache()
 
     def _resume(self, query: str, report) -> CompanyBrief | None:
@@ -82,10 +88,20 @@ class ResearchPipeline:
         report(5, "Scoring opportunity...")
         analysis.scores = self.scorer.score(evidence, analysis)
 
+        contacts = None
+        try:
+            report(6, "Finding contact details...")
+            contacts = self.prospector.find_contacts(
+                evidence.company, evidence.people
+            )
+        except Exception as e:
+            print(f"       ! Contact lookup failed: {e}", flush=True)
+
         brief = CompanyBrief(
             evidence=evidence,
             analysis=analysis,
             duration_seconds=round(time.time() - start, 2),
+            contacts=contacts,
         )
         self.cache.set(query, brief)
         return brief
@@ -105,7 +121,7 @@ class ResearchPipeline:
         start = time.time()
 
         def report(stage: int, message: str) -> None:
-            print(f"[{stage}/5] {message}", flush=True)
+            print(f"[{stage}/6] {message}", flush=True)
             if progress is not None:
                 progress(stage, message)
 
@@ -197,6 +213,21 @@ class ResearchPipeline:
         report(5, "Scoring opportunity...")
         scores = self.scorer.score(evidence, analysis)
         analysis.scores = scores
+
+        # Costs search calls but no LLM calls, so it runs last where a failure
+        # cannot cost the run its expensive stages.
+        contacts = None
+        try:
+            report(6, "Finding contact details...")
+            contacts = self.prospector.find_contacts(company, people)
+            print(
+                f"       > {len(contacts.found)} published, "
+                f"{len(contacts.inferred)} inferred",
+                flush=True,
+            )
+        except Exception as e:
+            # A brief without contacts is still a brief.
+            print(f"       ! Contact lookup failed: {e}", flush=True)
         print(
             f"       > Overall: {scores.overall_score}/10 ({scores.recommendation})",
             flush=True,
@@ -207,6 +238,7 @@ class ResearchPipeline:
             evidence=evidence,
             analysis=analysis,
             duration_seconds=round(duration, 2),
+            contacts=contacts,
         )
 
         if use_cache:

@@ -20,6 +20,12 @@ class Settings(BaseSettings):
     # on restart.
     redis_url: str = ""
 
+    # Optional. When set, contact discovery also queries Hunter.io, which
+    # returns a domain's published addresses and its address format. Without
+    # it the pipeline falls back to reading public pages, which finds far less
+    # because most companies now publish a contact form instead of an address.
+    hunter_api_key: str = ""
+
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
 
 

@@ -163,6 +163,7 @@
                 <button class="tab active" data-tab="overview">Overview</button>
                 <button class="tab" data-tab="signals">Signals</button>
                 <button class="tab" data-tab="opportunities">Opportunities</button>
+                <button class="tab" data-tab="contacts">Contacts</button>
                 <button class="tab" data-tab="evidence">Evidence</button>
                 <button class="tab" data-tab="sources">Sources</button>
             </div>
@@ -207,6 +208,31 @@
                 <div id="outreach-section" class="section">
                     <h3>Outreach Opportunity</h3>
                     <div id="outreach-content"></div>
+                </div>
+            </div>
+
+            <div id="tab-contacts" class="tab-panel">
+                <div class="section">
+                    <h3>Published contacts</h3>
+                    <p class="section-subtitle">Addresses found on the company&rsquo;s own pages, with the page that published each one.</p>
+                    <div id="contacts-found"></div>
+                </div>
+                <div id="contacts-inferred-section" class="section hidden">
+                    <h3>Likely addresses &mdash; inferred, not verified</h3>
+                    <p class="section-subtitle">
+                        Built from the address format observed above. These have <strong>not</strong> been
+                        confirmed to exist, and may reach the wrong person. Check before sending anything
+                        that matters.
+                    </p>
+                    <div id="contacts-inferred"></div>
+                </div>
+                <div class="section">
+                    <h3>LinkedIn</h3>
+                    <p class="section-subtitle">Where a profile wasn&rsquo;t found, that is stated plainly with a link to search yourself.</p>
+                    <div id="contacts-linkedin"></div>
+                </div>
+                <div class="section">
+                    <p id="contacts-note" class="contacts-note"></p>
                 </div>
             </div>
 

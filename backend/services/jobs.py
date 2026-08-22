@@ -18,7 +18,7 @@ from dataclasses import dataclass, field, asdict
 # Jobs are small, but a long-lived process would still accumulate them.
 JOB_TTL_SECONDS = 3600
 
-TOTAL_STAGES = 5
+TOTAL_STAGES = 6
 
 
 @dataclass
