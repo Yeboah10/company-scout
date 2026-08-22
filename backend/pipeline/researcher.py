@@ -1,7 +1,13 @@
 import time
 from typing import Callable
 
-from backend.models.schemas import CompanyBrief, ResearchEvidence, Source, SourceQuality
+from backend.models.schemas import (
+    CompanyAnalysis,
+    CompanyBrief,
+    ResearchEvidence,
+    Source,
+    SourceQuality,
+)
 from backend.pipeline.analyst import CompanyAnalyst
 from backend.pipeline.extractor import EvidenceExtractor
 from backend.pipeline.resolver import CompanyResolver
@@ -51,6 +57,39 @@ class ResearchPipeline:
         self.scorer = CompanyScorer(self.llm)
         self.cache = BriefCache()
 
+    def _resume(self, query: str, report) -> CompanyBrief | None:
+        """Finish a run whose research succeeded but whose scoring did not."""
+        partial = self.cache.get_partial(query)
+        if not partial:
+            return None
+
+        try:
+            evidence = ResearchEvidence.model_validate(partial["evidence"])
+            analysis = CompanyAnalysis.model_validate(partial["analysis"])
+        except (KeyError, ValueError) as e:
+            # A schema change since the checkpoint was written; redo it
+            # properly rather than resuming from something half-understood.
+            print(f"[cache] Discarding unusable checkpoint: {e}", flush=True)
+            return None
+
+        print(
+            f"[cache] Resuming {evidence.company.name} from saved research "
+            f"({len(evidence.claims)} claims); only scoring remains.",
+            flush=True,
+        )
+
+        start = time.time()
+        report(5, "Scoring opportunity...")
+        analysis.scores = self.scorer.score(evidence, analysis)
+
+        brief = CompanyBrief(
+            evidence=evidence,
+            analysis=analysis,
+            duration_seconds=round(time.time() - start, 2),
+        )
+        self.cache.set(query, brief)
+        return brief
+
     def research(
         self,
         query: str,
@@ -75,6 +114,12 @@ class ResearchPipeline:
             if cached is not None:
                 print(f"[cache] Serving cached brief for: {query}", flush=True)
                 return cached
+
+            # A previous run may have finished the research and died at
+            # scoring. Resuming costs one call instead of six.
+            resumed = self._resume(query, report)
+            if resumed is not None:
+                return resumed
 
         report(1, "Resolving company identity...")
         company, resolver_results = self.resolver.resolve(query)
@@ -130,6 +175,19 @@ class ResearchPipeline:
 
         report(4, "Analysing strategic signals and opportunities...")
         analysis = self.analyst.analyse(evidence)
+
+        # Checkpoint before scoring: everything above this line is expensive
+        # and already done, and scoring is the call most likely to hit the
+        # daily ceiling because it goes last.
+        if use_cache:
+            self.cache.set_partial(
+                query,
+                {
+                    "evidence": evidence.model_dump(mode="json"),
+                    "analysis": analysis.model_dump(mode="json"),
+                    "started": start,
+                },
+            )
         print(
             f"       > {len(analysis.signals)} signals, "
             f"{len(analysis.story_angles)} story angles",

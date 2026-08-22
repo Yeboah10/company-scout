@@ -285,6 +285,37 @@ class BriefCache:
             # The list is a convenience; never let it break a completed scout.
             pass
 
+    def set_partial(self, query: str, payload: dict) -> None:
+        """Save completed research before the stages that might still fail.
+
+        A scout costs ~6 Gemini calls against a 20/day allowance. Losing the
+        last call used to discard all five that came before it, so a run that
+        died at scoring cost a full day's budget and produced nothing.
+        """
+        if not settings.cache_enabled:
+            return
+        try:
+            body = json.dumps({"cached_at": time.time(), "partial": payload})
+        except (TypeError, ValueError):
+            return
+        # Shorter-lived than a finished brief: this is a resume aid, and stale
+        # evidence should be re-gathered rather than silently reused.
+        self.backend.write(f"{_key_for(query)}-partial", body, 2 * 86400)
+
+    def get_partial(self, query: str) -> dict | None:
+        if not settings.cache_enabled:
+            return None
+        raw = self.backend.read(f"{_key_for(query)}-partial")
+        if raw is None:
+            return None
+        try:
+            payload = json.loads(raw)
+        except json.JSONDecodeError:
+            return None
+        if time.time() - payload.get("cached_at", 0) > 2 * 86400:
+            return None
+        return payload.get("partial")
+
     def recent(self, limit: int = RECENT_LIMIT) -> list[dict]:
         """Most recently scouted companies, newest first."""
         if not settings.cache_enabled:
