@@ -99,6 +99,10 @@ def _scrub(event, hint):
         return None
 
 
+def is_enabled() -> bool:
+    return _enabled
+
+
 def capture(exc: BaseException, **tags) -> None:
     """Report an exception that was handled but shouldn't have happened."""
     if not _enabled:
