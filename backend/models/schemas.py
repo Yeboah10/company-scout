@@ -164,6 +164,11 @@ class OpportunityScores(BaseModel):
 
 class CompanyAnalysis(BaseModel):
     executive_summary: str
+    # Whether the company still trades. A defunct company can still make a
+    # good story or case study, but it cannot be contacted — the dimensions
+    # genuinely diverge, so the status has to travel with the analysis.
+    operational_status: str = "unknown"
+    status_evidence: Optional[str] = None
     signals: list[StrategicSignal] = Field(default_factory=list)
     story_angles: list[StoryAngle] = Field(default_factory=list)
     case_study: Optional[CaseStudyOpportunity] = None

@@ -2,6 +2,9 @@ from backend.models.schemas import CompanyAnalysis, OpportunityScores, ResearchE
 from backend.services.llm import LLMService
 from backend.services.recency import RecencyProfile, build_profile, recency_factor
 
+# Statuses in which there is nobody left to contact.
+DEFUNCT_STATUSES = {"defunct", "winding_down"}
+
 
 def build_evidence_profile(evidence: ResearchEvidence) -> RecencyProfile:
     """Collect every date the evidence offers into one recency picture.
@@ -92,13 +95,32 @@ class CompanyScorer:
         prompt = self._build_scoring_prompt(evidence, analysis, profile)
         data = self.llm.extract_structured(SCORER_SYSTEM_PROMPT, prompt)
 
+        outreach_score = float(data["outreach_score"])
+        outreach_reasoning = data["outreach_reasoning"]
+
+        # A company that has shut down can still be a fine story, case study or
+        # research subject — those dimensions legitimately stay high. But there
+        # is nobody left to email, so outreach is not a matter of judgement.
+        # Enforced here rather than left to the prompt: the model rated a
+        # collapsed company 6.5 for outreach on the strength of how interesting
+        # its collapse was.
+        if analysis.operational_status in DEFUNCT_STATUSES:
+            capped = min(outreach_score, 0.5)
+            if capped < outreach_score:
+                outreach_reasoning = (
+                    f"No outreach is possible: the company is "
+                    f"{analysis.operational_status.replace('_', ' ')}. "
+                    + (analysis.status_evidence or "")
+                ).strip()
+            outreach_score = capped
+
         return OpportunityScores(
             story_score=float(data["story_score"]),
             story_reasoning=data["story_reasoning"],
             case_study_score=float(data["case_study_score"]),
             case_study_reasoning=data["case_study_reasoning"],
-            outreach_score=float(data["outreach_score"]),
-            outreach_reasoning=data["outreach_reasoning"],
+            outreach_score=outreach_score,
+            outreach_reasoning=outreach_reasoning,
             research_score=float(data["research_score"]),
             research_reasoning=data["research_reasoning"],
             recency_factor=factor,
@@ -114,6 +136,7 @@ class CompanyScorer:
         c = evidence.company
         parts = [
             f"Company: {c.name} ({c.country or 'Unknown'})",
+            f"Operational status: {analysis.operational_status}",
             f"Industry: {c.industry or 'Unknown'}",
             f"Founded: {c.founded_year or 'Unknown'}",
             f"Description: {c.description or 'Unknown'}",

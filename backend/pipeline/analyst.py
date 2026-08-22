@@ -21,6 +21,8 @@ You MUST distinguish between:
 
 Return ONLY valid JSON in this exact format:
 {
+    "operational_status": "active|winding_down|defunct|acquired|unknown",
+    "status_evidence": "The specific claim that establishes this, or null if unknown",
     "executive_summary": "150 words max. What is this company, what is happening with it, and why might it matter?",
     "signals": [
         {
@@ -71,6 +73,12 @@ Rules:
 - Top priorities should be exactly 3 items
 - The case study score should be honest - not every company deserves a high score
 - If there is no credible outreach opportunity, set outreach to null
+- Determine operational_status from the evidence before anything else. A
+  company that has wound down, shut down or been acquired is a different
+  proposition from a trading one, and the rest of the analysis must reflect
+  that rather than describing a defunct company as though it were operating.
+- If the company is defunct or winding down, set outreach to null: there is
+  nobody left to contact. Say so plainly in the executive summary too.
 - For African companies, consider the specific market context, not generic Silicon Valley framing
 - Be specific and grounded in the evidence, never vague or generic
 """
@@ -138,6 +146,8 @@ class CompanyAnalyst:
 
         return CompanyAnalysis(
             executive_summary=data.get("executive_summary", ""),
+            operational_status=(data.get("operational_status") or "unknown"),
+            status_evidence=data.get("status_evidence"),
             signals=signals,
             story_angles=story_angles,
             case_study=case_study,
