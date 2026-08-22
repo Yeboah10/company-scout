@@ -114,6 +114,7 @@
                 <div id="step-3" class="step">Extracting structured evidence</div>
                 <div id="step-4" class="step">Analysing strategic signals</div>
                 <div id="step-5" class="step">Scoring opportunity</div>
+                <div id="step-6" class="step">Finding contact details</div>
             </div>
             <p id="loading-patience" class="loading-patience hidden">Your report is still cooking — this can take a few minutes. Thanks for your patience!</p>
 
@@ -280,7 +281,14 @@
     </div>
     <div id="changelog-backdrop" class="changelog-backdrop hidden"></div>
 
-    <script src="/static/changelog.js"></script>
-    <script src="/static/app.js"></script>
+    <!-- Order matters: core defines the shared helpers, scout owns start-up
+         and must run last. -->
+    <script src="/static/js/core.js"></script>
+    <script src="/static/js/theme.js"></script>
+    <script src="/static/js/changelog-data.js"></script>
+    <script src="/static/js/changelog.js"></script>
+    <script src="/static/js/report.js"></script>
+    <script src="/static/js/contacts.js"></script>
+    <script src="/static/js/scout.js"></script>
 </body>
 </html>

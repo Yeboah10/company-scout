@@ -3,6 +3,15 @@
 // what they'd notice, not the commit that caused it.
 const CHANGELOG = [
     {
+        version: '0.7.0',
+        date: '2026-08-23',
+        changes: [
+            'New Contacts tab: published email addresses, likely addresses clearly marked as guesses, and LinkedIn profiles.',
+            'Where a LinkedIn profile could not be found, the report says so and links you straight to a manual search.',
+            'Better sources: press-release wires and scraper directories are now excluded, and African tech press is searched directly.'
+        ]
+    },
+    {
         version: '0.6.0',
         date: '2026-08-21',
         changes: [
