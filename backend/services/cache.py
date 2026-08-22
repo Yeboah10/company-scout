@@ -7,6 +7,7 @@ from pathlib import Path
 
 from backend.config import settings
 from backend.models.schemas import CompanyBrief
+from backend.services import monitoring
 
 # Share keys arrive from URLs, so anything used to address storage must match
 # this before it reaches the filesystem or the key-value store.
@@ -124,6 +125,7 @@ class _RedisBackend:
         except Exception as e:
             # A cache outage must degrade to a slow lookup, never an error.
             _log(f"Redis read failed: {e}")
+            monitoring.warn("Redis read failed", reason=str(e)[:200])
             return None
 
     def write(self, key: str, payload: str, ttl_seconds: int) -> None:
@@ -131,6 +133,9 @@ class _RedisBackend:
             self.client.setex(f"brief:{key}", ttl_seconds, payload)
         except Exception as e:
             _log(f"Redis write failed: {e}")
+            # A failed write means the report is gone the moment the process
+            # restarts, and the user is never told.
+            monitoring.warn("Redis write failed", reason=str(e)[:200])
 
     def push_recent(self, entry: str, limit: int) -> None:
         try:
@@ -190,6 +195,13 @@ class BriefCache:
             except Exception as e:
                 # Missing package or bad URL shouldn't take the app down.
                 _log(f"Redis unavailable ({e}); falling back to disk")
+                # The app keeps working, which is exactly why this needs
+                # reporting: on Render the disk is ephemeral, so every report
+                # and share link is quietly lost on the next restart.
+                monitoring.warn(
+                    "Cache fell back to disk: Redis unreachable",
+                    reason=str(e)[:200],
+                )
                 self.backend = _FileBackend(directory)
         else:
             # Silence here would be indistinguishable from a working Redis, and

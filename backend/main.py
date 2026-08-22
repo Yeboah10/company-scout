@@ -14,11 +14,15 @@ from backend.pipeline.researcher import InsufficientEvidenceError, ResearchPipel
 from backend.services.cache import BriefCache
 from backend.services.jobs import TOTAL_STAGES, JobStore
 from backend.services.llm import QuotaExhaustedError
+from backend.services import monitoring
 from backend.services.hunter import is_configured as hunter_configured
 from backend.services.report import brief_to_markdown
 from backend.services.usage import usage
 
 FRONTEND_DIR = Path(__file__).resolve().parent.parent / "frontend"
+
+# Before the app is constructed, so failures during start-up are reported too.
+monitoring.init()
 
 app = FastAPI(
     title="Company Scout",
@@ -95,8 +99,11 @@ def _run_job(job_id: str, query: str) -> None:
             error_kind="quota_exhausted",
             error=str(e),
         )
-    except Exception:
+    except Exception as e:
         print(f"ERROR in scout job: {traceback.format_exc()}", flush=True)
+        # Caught so the user sees a clean message; reported because a generic
+        # apology on screen is not a record anyone can act on.
+        monitoring.capture(e, stage="scout_job", query=query)
         jobs.update(
             job_id,
             status="error",
@@ -166,6 +173,10 @@ async def scout_status(job_id: str):
             payload["status"] = "error"
             payload["error_kind"] = "failed"
             payload["error"] = "The report could not be saved. Please try again."
+            monitoring.warn(
+                "Scout finished but its brief was not in the cache",
+                share_key=job.share_key,
+            )
 
     return JSONResponse(content=payload)
 

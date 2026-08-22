@@ -47,6 +47,12 @@ class Settings(BaseSettings):
     # because most companies now publish a contact form instead of an address.
     hunter_api_key: str = ""
 
+    # Error reporting. Off unless a DSN is set.
+    sentry_dsn: str = ""
+    sentry_environment: str = "production"
+    # Tagged on every event so a regression can be traced to a release.
+    app_version: str = "0.8.0"
+
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
 
 

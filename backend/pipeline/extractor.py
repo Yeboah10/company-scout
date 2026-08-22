@@ -7,6 +7,7 @@ from backend.models.schemas import (
     Source,
     SourceQuality,
 )
+from backend.services import monitoring
 from backend.services.llm import LLMService, QuotaExhaustedError
 
 SYSTEM_PROMPT = """You are an evidence extraction specialist for a company research tool focused on African companies and markets.
@@ -84,6 +85,9 @@ class EvidenceExtractor:
             except Exception as e:
                 # Losing one batch costs some evidence but shouldn't fail the run.
                 print(f"       ! Extraction failed for a batch: {e}", flush=True)
+                # The brief still renders, just with less in it. Nothing on
+                # screen says so, which is why this is worth reporting.
+                monitoring.capture(e, stage="extraction", company=company.name)
                 chunks.append(([], []))
 
         all_claims = []
