@@ -16,6 +16,7 @@ a month, and nothing here runs unless a key is configured.
 import httpx
 
 from backend.config import settings
+from backend.services.usage import usage
 
 BASE = "https://api.hunter.io/v2"
 TIMEOUT = 12.0
@@ -35,6 +36,7 @@ def domain_search(domain: str, limit: int = 10) -> dict | None:
         return None
 
     try:
+        usage.record_hunter()
         r = httpx.get(
             f"{BASE}/domain-search",
             params={

@@ -8,12 +8,15 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 
+from backend.config import settings
 from backend.models.schemas import ScoutRequest, ScoutResponse
 from backend.pipeline.researcher import InsufficientEvidenceError, ResearchPipeline
 from backend.services.cache import BriefCache
 from backend.services.jobs import TOTAL_STAGES, JobStore
 from backend.services.llm import QuotaExhaustedError
+from backend.services.hunter import is_configured as hunter_configured
 from backend.services.report import brief_to_markdown
+from backend.services.usage import usage
 
 FRONTEND_DIR = Path(__file__).resolve().parent.parent / "frontend"
 
@@ -213,6 +216,40 @@ async def recent_scouts():
     into the obvious next click rather than a lucky coincidence.
     """
     return JSONResponse(content={"recent": cache.recent()})
+
+
+@app.get("/usage")
+async def usage_report():
+    """What has been spent against each provider's free tier.
+
+    Counted by this process, so a restart loses history and the provider's own
+    console remains the authority. Surfaced anyway: an approximate number you
+    can see beats an exact one behind three separate logins.
+    """
+    models = [
+        settings.llm_model_resolver,
+        settings.llm_model_extractor,
+        settings.llm_model_analyst,
+        settings.llm_model_scorer,
+    ]
+    seen: set[str] = set()
+    ordered = [m for m in models + settings.fallback_models
+               if not (m in seen or seen.add(m))]
+
+    snapshot = usage.snapshot(ordered)
+    snapshot["stages"] = {
+        "resolver": settings.llm_model_resolver,
+        "extractor": settings.llm_model_extractor,
+        "analyst": settings.llm_model_analyst,
+        "scorer": settings.llm_model_scorer,
+    }
+    snapshot["hunter"]["configured"] = hunter_configured()
+    return JSONResponse(content=snapshot)
+
+
+@app.get("/usage-page")
+async def usage_page():
+    return FileResponse(str(FRONTEND_DIR / "usage.html"))
 
 
 @app.get("/health")

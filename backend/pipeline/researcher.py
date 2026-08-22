@@ -15,6 +15,7 @@ from backend.pipeline.prospector import Prospector
 from backend.pipeline.scorer import CompanyScorer
 from backend.pipeline.searcher import CompanySearcher
 from backend.services.cache import BriefCache
+from backend.config import settings
 from backend.services.llm import LLMService
 from backend.services.search import SearchService
 from backend.services.sources import (
@@ -54,12 +55,16 @@ def _classify_source_quality(url: str, publisher: str | None) -> SourceQuality:
 class ResearchPipeline:
     def __init__(self):
         self.search = SearchService()
+        # A model per stage. The free tier's daily cap is per model, so
+        # spreading the pipeline across several multiplies the day's capacity;
+        # judgment stages get the stronger models, mechanical ones get lite.
         self.llm = LLMService()
-        self.resolver = CompanyResolver(self.search, self.llm)
+        self.resolver = CompanyResolver(
+            self.search, LLMService(settings.llm_model_resolver))
         self.searcher = CompanySearcher(self.search)
-        self.extractor = EvidenceExtractor(self.llm)
-        self.analyst = CompanyAnalyst(self.llm)
-        self.scorer = CompanyScorer(self.llm)
+        self.extractor = EvidenceExtractor(LLMService(settings.llm_model_extractor))
+        self.analyst = CompanyAnalyst(LLMService(settings.llm_model_analyst))
+        self.scorer = CompanyScorer(LLMService(settings.llm_model_scorer))
         self.prospector = Prospector(self.search)
         self.cache = BriefCache()
 

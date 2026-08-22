@@ -6,6 +6,7 @@ from google import genai
 from google.genai import errors as genai_errors
 
 from backend.config import settings
+from backend.services.usage import usage
 
 
 class QuotaExhaustedError(Exception):
@@ -27,10 +28,28 @@ def _is_daily_quota_error(message: str) -> bool:
     return "perday" in lowered or "requests_per_day" in lowered
 
 
+class AllModelsExhaustedError(QuotaExhaustedError):
+    """Every model in the chain has spent its daily allowance."""
+
+
 class LLMService:
-    def __init__(self):
+    def __init__(self, model: str | None = None, fallbacks: list[str] | None = None):
         self.client = genai.Client(api_key=settings.google_api_key)
-        self.model = settings.llm_model
+        self.model = model or settings.llm_model
+        # The free tier's daily cap is per model, so an exhausted model is a
+        # reason to switch rather than to stop.
+        chain = [self.model] + (
+            fallbacks if fallbacks is not None else settings.fallback_models
+        )
+        seen: set[str] = set()
+        self.chain = [m for m in chain if not (m in seen or seen.add(m))]
+
+    def _next_model(self) -> str | None:
+        """The first model in the chain with budget left today."""
+        for model in self.chain:
+            if not usage.is_exhausted(model):
+                return model
+        return None
 
     def extract_structured(self, system_prompt: str, user_prompt: str, retries: int = 2) -> dict:
         for attempt in range(retries + 1):
@@ -58,10 +77,23 @@ class LLMService:
                     raise
 
     def _call_with_rate_limit_retry(self, system_prompt: str, user_prompt: str, max_waits: int = 3):
-        for wait_attempt in range(max_waits + 1):
+        model = self._next_model()
+        if model is None:
+            raise AllModelsExhaustedError(
+                "Every available Gemini model has used its daily free-tier "
+                "allowance. They reset at midnight Pacific time."
+            )
+        if model != self.model:
+            print(f"       Switching to {model} ({self.model} is spent)", flush=True)
+
+        # Model switches and rate-limit waits are counted separately: moving to
+        # a fresh model is not a failed attempt, and sharing one budget between
+        # them would let a couple of switches consume the retry allowance.
+        waits = 0
+        while True:
             try:
-                return self.client.models.generate_content(
-                    model=self.model,
+                response = self.client.models.generate_content(
+                    model=model,
                     contents=f"{system_prompt}\n\n{user_prompt}",
                     config=genai.types.GenerateContentConfig(
                         temperature=0.1,
@@ -69,25 +101,39 @@ class LLMService:
                         response_mime_type="application/json",
                     ),
                 )
+                usage.record_gemini(model)
+                return response
             except genai_errors.ClientError as e:
                 message = str(e)
-                if "429" in message:
-                    # Waiting out a spent daily allowance just burns minutes:
-                    # three backoffs per call, several calls per run, all
-                    # doomed. Fail immediately so the caller can say so.
-                    if _is_daily_quota_error(message):
-                        raise QuotaExhaustedError(
-                            "The daily Gemini free-tier allowance (20 requests) is "
-                            "used up. It resets at midnight Pacific time."
+                if "429" not in message:
+                    raise
+
+                # A spent daily allowance cannot be waited out, but it applies
+                # only to this model. Note it and move on, so the other models'
+                # untouched budgets still get used.
+                if _is_daily_quota_error(message):
+                    usage.mark_exhausted(model)
+                    nxt = self._next_model()
+                    if nxt is None:
+                        raise AllModelsExhaustedError(
+                            "Every available Gemini model has spent its daily "
+                            "free-tier allowance. They reset at midnight "
+                            "Pacific time."
                         ) from e
-                    if wait_attempt < max_waits:
-                        wait_time = 20 * (wait_attempt + 1)
-                        print(
-                            f"       Rate limited. Waiting {wait_time}s before retry...",
-                            flush=True,
-                        )
-                        time.sleep(wait_time)
-                        continue
+                    print(f"       {model} is spent; switching to {nxt}", flush=True)
+                    model = nxt
+                    continue
+
+                # Per-minute throttling: this one is worth waiting out.
+                if waits < max_waits:
+                    waits += 1
+                    wait_time = 20 * waits
+                    print(
+                        f"       Rate limited. Waiting {wait_time}s before retry...",
+                        flush=True,
+                    )
+                    time.sleep(wait_time)
+                    continue
                 raise
 
 

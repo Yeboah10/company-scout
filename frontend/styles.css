@@ -755,6 +755,7 @@ body {
     display: flex;
     justify-content: center;
     padding: 30px 20px 40px;
+    gap: 10px;
 }
 
 .changelog-toggle {
@@ -1180,3 +1181,95 @@ a.contact-email:hover { color: var(--accent); text-decoration: underline; }
     border-style: dashed;
     opacity: 0.85;
 }
+
+/* Usage page */
+.usage-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-bottom: 24px;
+}
+
+.usage-headline {
+    text-align: center;
+    padding: 20px;
+    margin-bottom: 24px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    font-size: 1.15rem;
+}
+
+.usage-headline.empty { border-color: var(--red); }
+
+.usage-reset {
+    display: block;
+    margin-top: 6px;
+    color: var(--text-dim);
+    font-size: 0.82rem;
+}
+
+.usage-row { margin-bottom: 16px; }
+
+.usage-row-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 10px;
+    margin-bottom: 6px;
+}
+
+.usage-label { font-size: 0.88rem; font-weight: 600; }
+.usage-count { color: var(--text-dim); font-size: 0.78rem; }
+
+.usage-bar {
+    height: 8px;
+    background: var(--bg-card-hover);
+    border-radius: 999px;
+    overflow: hidden;
+}
+
+.usage-fill {
+    height: 100%;
+    border-radius: 999px;
+    transition: width 0.3s;
+}
+
+/* Coloured by headroom remaining, not by amount spent. */
+.usage-fill.ok   { background: var(--green); }
+.usage-fill.half { background: var(--blue); }
+.usage-fill.low  { background: var(--yellow); }
+.usage-fill.gone { background: var(--red); }
+
+.usage-sub {
+    margin-top: 5px;
+    color: var(--text-muted);
+    font-size: 0.78rem;
+}
+
+.usage-caveat {
+    margin-top: 28px;
+    padding: 14px 16px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text-muted);
+    font-size: 0.82rem;
+    line-height: 1.6;
+}
+
+.usage-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    justify-content: center;
+    margin: 20px 0 40px;
+}
+
+.usage-links a {
+    color: var(--text-dim);
+    font-size: 0.82rem;
+    text-decoration: none;
+}
+
+.usage-links a:hover { color: var(--accent); }

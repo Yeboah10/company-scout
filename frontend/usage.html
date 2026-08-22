@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Usage — Company Scout</title>
+    <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="/static/styles.css">
+    <script>
+        try {
+            var saved = localStorage.getItem('scout-theme');
+            if (saved === 'light' || saved === 'dark') {
+                document.documentElement.setAttribute('data-theme', saved);
+            }
+        } catch (e) {}
+    </script>
+</head>
+<body>
+    <div id="app">
+        <header class="header">
+            <button id="theme-toggle" class="theme-toggle" type="button"
+                    title="Switch between light and dark"
+                    aria-label="Switch between light and dark"></button>
+            <h1 class="logo">Usage</h1>
+            <p class="tagline">What&rsquo;s left before you hit a free-tier limit.</p>
+        </header>
+
+        <div class="usage-actions">
+            <a href="/" class="download-btn">&larr; Back to Scout</a>
+            <button id="refresh" class="download-btn" type="button">Refresh</button>
+        </div>
+
+        <div id="usage-body"></div>
+
+        <p class="usage-caveat">
+            These counts are what this server has observed since it last restarted.
+            Render&rsquo;s free tier restarts the service when it goes idle, so the real
+            figures may be higher. Treat this as a guide and each provider&rsquo;s own
+            console as the authority.
+        </p>
+
+        <div class="usage-links">
+            <a href="https://ai.dev/rate-limit" target="_blank" rel="noopener">Gemini limits &rarr;</a>
+            <a href="https://app.tavily.com/" target="_blank" rel="noopener">Tavily usage &rarr;</a>
+            <a href="https://dashboard.render.com/" target="_blank" rel="noopener">Render dashboard &rarr;</a>
+        </div>
+    </div>
+
+    <script src="/static/js/core.js"></script>
+    <script src="/static/js/theme.js"></script>
+    <script src="/static/js/usage.js"></script>
+</body>
+</html>

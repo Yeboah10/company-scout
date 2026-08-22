@@ -5,6 +5,7 @@ from tavily import TavilyClient
 from backend.config import settings
 from backend.models.schemas import SearchResult
 from backend.services.sources import excluded_domains
+from backend.services.usage import usage
 
 
 class SearchService:
@@ -35,6 +36,7 @@ class SearchService:
         params["exclude_domains"] = exclude_domains or excluded_domains()
 
         try:
+            usage.record_tavily()
             response = self.client.search(**params)
         except TypeError:
             # An older tavily-python may not accept every parameter; a plain
@@ -74,6 +76,7 @@ class SearchService:
             }
             if include_domains:
                 params["include_domains"] = include_domains
+            usage.record_tavily()
             response = self.client.search(**params)
         except Exception as e:
             print(f"       ! Page fetch failed for '{query}': {e}", flush=True)
