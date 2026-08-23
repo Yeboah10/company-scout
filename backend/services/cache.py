@@ -7,6 +7,7 @@ from pathlib import Path
 
 from backend.config import settings
 from backend.models.schemas import CompanyBrief
+from backend.services import store
 from backend.services import monitoring
 
 # Share keys arrive from URLs, so anything used to address storage must match
@@ -229,6 +230,13 @@ class BriefCache:
     def _load(self, key: str) -> CompanyBrief | None:
         raw = self.backend.read(key)
         if raw is None:
+            # Expired from the cache, or lost to a restart. The store keeps
+            # every run, so a miss here is not the end of the lookup.
+            brief = store.load_by_key(key)
+            if brief is not None:
+                _log(f"Served {key} from Postgres after a cache miss")
+                return brief
+        if raw is None:
             return None
 
         try:
@@ -275,6 +283,11 @@ class BriefCache:
         # Caching is an optimisation; never fail a request over it.
         key = _key_for(query)
         self.backend.write(key, payload, self.ttl_seconds)
+
+        # Postgres is the durable copy. The cache stays the fast path, but it
+        # forgets after seven days and this must not — a share link handed out
+        # last month should still open.
+        store.save(brief, query, key)
 
         # A compact index entry, so listing recent scouts doesn't mean loading
         # and parsing a dozen full briefs.

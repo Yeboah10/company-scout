@@ -21,7 +21,7 @@ from backend.pipeline.researcher import InsufficientEvidenceError, ResearchPipel
 from backend.services.cache import BriefCache
 from backend.services.jobs import TOTAL_STAGES, JobStore
 from backend.services.llm import QuotaExhaustedError
-from backend.services import auth, db, monitoring
+from backend.services import auth, db, monitoring, store
 from backend.services.apollo import is_configured as apollo_configured
 from backend.services import hunter
 from backend.services.report import brief_to_markdown
@@ -105,6 +105,10 @@ jobs = JobStore()
 # outlives the deploys and idle spin-downs that would otherwise reset the
 # day's usage to zero several times an hour.
 usage.attach_store(cache.backend)
+
+# At start-up, not on first write: a database problem should appear in
+# the deploy log, not three minutes into somebody's research run.
+store.ensure_schema()
 
 
 def _run_job(job_id: str, query: str) -> None:
@@ -269,7 +273,8 @@ async def recent_scouts():
     These are already-paid-for reports, so surfacing them turns a cache hit
     into the obvious next click rather than a lucky coincidence.
     """
-    return JSONResponse(content={"recent": cache.recent()})
+    durable = store.recent()
+    return JSONResponse(content={"recent": durable or cache.recent()})
 
 
 def _check_admin(request: Request) -> None:

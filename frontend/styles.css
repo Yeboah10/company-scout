@@ -98,86 +98,97 @@
    survives the inversion; the ink colour becomes the raised surface. */
 @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
-        --ground: #171514;
-        --surface: #201e1d;
-        --raised: #201e1d;
+        /* Neutral grey, not a warm near-black. The light ground is warm paper;
+           the dark ground is graphite. Trying to carry the warmth across made
+           everything look like a sepia photograph. */
+        --ground: #1c1d1f;
+        --surface: #26282b;
+        --raised: #26282b;
 
-        --ink: #f3f2f2;
-        --ink-60: #b5b0ae;
-        --ink-45: #8f8a88;
+        --ink: #eceef0;
+        --ink-60: #b2b6bb;
+        --ink-45: #868b91;
 
-        --rule: #d7d3d3;
-        --rule-soft: #444141;
+        --rule: #d3d7db;
+        --rule-soft: #3b3e43;
 
-        --accent: #d84a28;
-        --accent-hover: #ef7a5a;
-        --accent-text: #ef7a5a;
+        /* Red and amber both have to lift off graphite or they read as brown and
+           ochre. The fills keep the logo values; only text and hover move. */
+        --accent: #e2542f;
+        --accent-hover: #f08a68;
+        --accent-text: #f08a68;
         --accent-fill: #cf4423;
         --on-accent: #ffffff;
-        --accent-100: #2a1a14;
-        --accent-200: #3a221a;
+        --accent-100: #2b1d18;
+        --accent-200: #3b241d;
 
-        --amber: #f0a000;
-        --amber-100: #2e2411;
-        --amber-700: #f0a000;
+        --amber: #f5b32e;
+        --amber-100: #2f2716;
+        --amber-700: #f5b32e;
 
         --verified: #7cb890;
-        --verified-100: #1b2a21;
+        --verified-100: #1e2a22;
 
-        --neutral-100: #201e1d;
-        --neutral-200: #2d2b2b;
-        --neutral-300: #444141;
-        --neutral-400: #605d5d;
-        --neutral-500: #7d7979;
-        --neutral-600: #9b9797;
-        --neutral-700: #bab6b6;
-        --neutral-800: #d7d3d3;
-        --neutral-900: #eae7e7;
+        --neutral-100: #26282b;
+        --neutral-200: #2f3236;
+        --neutral-300: #3b3e43;
+        --neutral-400: #565a60;
+        --neutral-500: #74797f;
+        --neutral-600: #868b91;
+        --neutral-700: #b2b6bb;
+        --neutral-800: #d3d7db;
+        --neutral-900: #eceef0;
 
-        --shadow-modal: 0 12px 32px rgba(0, 0, 0, 0.55);
-        --blue: #60a5fa;
+        --shadow-modal: 0 12px 32px rgba(0, 0, 0, 0.6);
+        --blue: #74a9f8;
     }
 }
 
 :root[data-theme="dark"] {
-    --ground: #171514;
-    --surface: #201e1d;
-    --raised: #201e1d;
+    /* Neutral grey, not a warm near-black. The light ground is warm paper;
+       the dark ground is graphite. Trying to carry the warmth across made
+       everything look like a sepia photograph. */
+    --ground: #1c1d1f;
+    --surface: #26282b;
+    --raised: #26282b;
 
-    --ink: #f3f2f2;
-    --ink-60: #b5b0ae;
-    --ink-45: #8f8a88;
+    --ink: #eceef0;
+    --ink-60: #b2b6bb;
+    --ink-45: #868b91;
 
-    --rule: #d7d3d3;
-    --rule-soft: #444141;
+    --rule: #d3d7db;
+    --rule-soft: #3b3e43;
 
-    --accent: #d84a28;
-    --accent-hover: #ef7a5a;
-    --accent-text: #ef7a5a;
+    /* Red and amber both have to lift off graphite or they read as brown and
+       ochre. The fills keep the logo values; only text and hover move. */
+    --accent: #e2542f;
+    --accent-hover: #f08a68;
+    --accent-text: #f08a68;
     --accent-fill: #cf4423;
     --on-accent: #ffffff;
-    --accent-100: #2a1a14;
-    --accent-200: #3a221a;
+    --accent-100: #2b1d18;
+    --accent-200: #3b241d;
 
-    --amber: #f0a000;
-    --amber-100: #2e2411;
-    --amber-700: #f0a000;
+    --amber: #f5b32e;
+    --amber-100: #2f2716;
+    --amber-700: #f5b32e;
 
     --verified: #7cb890;
-    --verified-100: #1b2a21;
+    --verified-100: #1e2a22;
 
-    --neutral-100: #201e1d;
-    --neutral-200: #2d2b2b;
-    --neutral-300: #444141;
-    --neutral-400: #605d5d;
-    --neutral-500: #7d7979;
-    --neutral-600: #9b9797;
-    --neutral-700: #bab6b6;
-    --neutral-800: #d7d3d3;
-    --neutral-900: #eae7e7;
+    --neutral-100: #26282b;
+    --neutral-200: #2f3236;
+    --neutral-300: #3b3e43;
+    --neutral-400: #565a60;
+    --neutral-500: #74797f;
+    --neutral-600: #868b91;
+    --neutral-700: #b2b6bb;
+    --neutral-800: #d3d7db;
+    --neutral-900: #eceef0;
 
-    --shadow-modal: 0 12px 32px rgba(0, 0, 0, 0.55);
-    --blue: #60a5fa;
+    --shadow-modal: 0 12px 32px rgba(0, 0, 0, 0.6);
+    --blue: #74a9f8;
+
 }
 
 body {
@@ -1956,3 +1967,270 @@ body {
 
 .options-signout { margin: 0; }
 .options-signout .options-item { width: 100%; }
+
+/* ══════════════════════════════════════════════════════════════════════
+   Homepage — Modernist layout.
+
+   Amber earns a role here beyond warnings. It runs the *editorial* layer:
+   the kicker arrows, the numerals, the rule under a section label. Red stays
+   action — the thing you click is always red and nothing else is. The two
+   never collide because they take different forms: amber appears as thin
+   rules, numerals and hairlines; amber as a FILLED badge still means one
+   thing only, the evidence is weaker here.
+   ══════════════════════════════════════════════════════════════════════ */
+
+#app {
+    max-width: 1100px;
+    padding: 0 40px 60px;
+}
+
+.app-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 22px 0 18px;
+    border-bottom: 2px solid var(--rule);
+    position: relative;
+}
+
+.brand {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    text-decoration: none;
+    color: var(--ink);
+}
+
+.brand-mark {
+    width: 11px;
+    height: 11px;
+    display: inline-block;
+}
+
+.brand-mark-red { background: var(--accent); }
+.brand-mark-amber { background: var(--amber); }
+
+.brand-name {
+    margin-left: 7px;
+    font-size: 15px;
+    font-weight: 800;
+    line-height: 0.94;
+    letter-spacing: -0.02em;
+    text-transform: uppercase;
+}
+
+.app-header .header-actions {
+    position: static;
+}
+
+/* — Hero — */
+.hero {
+    padding: 54px 0 46px;
+    border-bottom: 2px solid var(--rule);
+}
+
+.kicker {
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--accent-text);
+}
+
+/* The one place the two brand colours sit side by side in running text. */
+.kicker-arrow {
+    color: var(--amber-700);
+    padding: 0 2px;
+}
+
+.hero-title {
+    margin-top: 20px;
+    font-size: clamp(38px, 6vw, 62px);
+    font-weight: 800;
+    line-height: 0.96;
+    letter-spacing: -0.04em;
+}
+
+.hero-lead {
+    margin-top: 18px;
+    max-width: 520px;
+    font-size: 16px;
+    line-height: 1.5;
+    color: var(--ink-60);
+    text-wrap: pretty;
+}
+
+.hero .search-form {
+    margin-top: 30px;
+    max-width: 700px;
+}
+
+.hero .examples {
+    justify-content: flex-start;
+    margin-top: 14px;
+}
+
+.capacity {
+    text-align: left;
+    margin-top: 14px;
+}
+
+/* — Action row — */
+.action-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    border-bottom: 2px solid var(--rule);
+    margin: 0;
+    max-width: none;
+    gap: 0;
+}
+
+.action-cell {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 7px;
+    padding: 24px 22px 26px;
+    border-right: 1px solid var(--rule-soft);
+    border-radius: 0;
+    background: none;
+    border-top: none;
+    border-bottom: none;
+    border-left: none;
+    font: inherit;
+    text-align: left;
+    text-decoration: none;
+    color: var(--ink);
+    cursor: pointer;
+}
+
+.action-cell:last-child { border-right: none; }
+.action-cell:first-child { padding-left: 0; }
+
+.action-cell:not(.is-soon):hover { background: var(--accent-100); }
+.action-cell.is-soon { cursor: default; }
+
+/* Numerals are amber: editorial structure, not status. */
+.action-index {
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    color: var(--amber-700);
+}
+
+.action-title {
+    font-size: 16px;
+    font-weight: 800;
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+}
+
+.action-body {
+    font-size: 12.5px;
+    line-height: 1.5;
+    color: var(--ink-60);
+    text-wrap: pretty;
+}
+
+.action-cta {
+    margin-top: auto;
+    padding-top: 10px;
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    color: var(--accent-text);
+}
+
+.action-cta.soon {
+    color: var(--amber-700);
+    background: var(--amber-100);
+    padding: 3px 7px;
+    font-size: 9.5px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+}
+
+/* — Recent scouts, as a table — */
+.recent {
+    padding: 34px 0 0;
+}
+
+.recent-head,
+.recent-card {
+    display: grid;
+    grid-template-columns: 1fr 92px 92px 190px 70px;
+    align-items: center;
+    gap: 16px;
+}
+
+.recent-head {
+    padding: 0 0 9px;
+    border-bottom: 2px solid var(--rule);
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--ink-45);
+}
+
+.recent-head span:nth-child(2),
+.recent-head span:nth-child(3) { text-align: right; }
+
+.recent-list {
+    display: block;
+}
+
+.recent-card {
+    padding: 14px 0;
+    border-bottom: 1px solid var(--rule-soft);
+    text-decoration: none;
+    color: var(--ink);
+    background: none;
+    border-radius: 0;
+}
+
+.recent-card:hover { background: var(--accent-100); }
+
+.recent-name {
+    font-size: 15px;
+    font-weight: 700;
+}
+
+.recent-country {
+    font-size: 11.5px;
+    color: var(--ink-45);
+}
+
+.recent-score {
+    text-align: right;
+    font-size: 16px;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+}
+
+.recent-verdict {
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-60);
+}
+
+.recent-open {
+    text-align: right;
+    font-size: 11.5px;
+    font-weight: 700;
+    color: var(--accent-text);
+}
+
+@media (max-width: 860px) {
+    #app { padding: 0 20px 40px; }
+    .action-row { grid-template-columns: repeat(2, 1fr); }
+    .action-cell { border-bottom: 1px solid var(--rule-soft); }
+    .action-cell:first-child { padding-left: 22px; }
+    .recent-head { display: none; }
+    .recent-card { grid-template-columns: 1fr auto auto; }
+    .recent-card .recent-verdict,
+    .recent-card .recent-open { display: none; }
+}

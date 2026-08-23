@@ -236,13 +236,18 @@ async function loadRecent() {
     const wrap = document.getElementById('recent');
     if (!list || !wrap) return;
 
+    // A row per company: name, the two scores, the verdict, and a way in.
+    // Scores are right-aligned and tabular so the column reads as a column.
     list.innerHTML = items.map(item => `
         <a class="recent-card" href="/r/${encodeURIComponent(item.key)}">
-            <span class="recent-name">${escapeHtml(item.name || item.key)}</span>
-            <span class="recent-sub">
-                ${item.country ? escapeHtml(item.country) : ''}
-                ${item.score != null ? `<span class="recent-score">${escapeHtml(item.score)}/10</span>` : ''}
+            <span>
+                <span class="recent-name">${escapeHtml(item.name || item.key)}</span>
+                ${item.country ? `<br><span class="recent-country">${escapeHtml(item.country)}</span>` : ''}
             </span>
+            <span class="recent-score">${item.interest != null ? escapeHtml(item.interest) : '&mdash;'}</span>
+            <span class="recent-score">${item.reach != null ? escapeHtml(item.reach) : '&mdash;'}</span>
+            <span class="recent-verdict">${escapeHtml(item.verdict || '')}</span>
+            <span class="recent-open">Open &rarr;</span>
         </a>
     `).join('');
 
@@ -282,4 +287,7 @@ loadSharedReport();
 if (!/^\/r\//.test(window.location.pathname)) {
     loadRecent();
     loadCapacity();
+    document.querySelector('[data-focus-search]')?.addEventListener('click', () => {
+        document.getElementById('company-input')?.focus();
+    });
 }

@@ -42,8 +42,14 @@
 </head>
 <body>
     <div id="app">
-        <!-- Header -->
-        <header class="header">
+        <!-- App header: identity, options. The rail on the left carries
+             navigation; this row carries who we are and what you can change. -->
+        <header class="app-header">
+            <a class="brand" href="/">
+                <span class="brand-mark brand-mark-red"></span>
+                <span class="brand-mark brand-mark-amber"></span>
+                <span class="brand-name">Company<br>Scout</span>
+            </a>
             <div class="header-actions">
                 <button
                     id="options-toggle"
@@ -78,24 +84,31 @@
                     </form>
                 </div>
             </div>
-            <h1 class="logo">Company Scout</h1>
-            <p class="tagline">Find out whether a company is worth your time.</p>
         </header>
 
-        <!-- Search -->
-        <div class="search-container">
+        <!-- Hero: a command centre, not a blank search box. -->
+        <section class="hero">
+            <p class="kicker">Scout <span class="kicker-arrow">&rarr;</span> Signal
+                <span class="kicker-arrow">&rarr;</span> Decide
+                <span class="kicker-arrow">&rarr;</span> Act</p>
+            <h1 class="hero-title">Turn companies<br>into opportunities.</h1>
+            <p class="hero-lead">
+                Research a company, understand what&rsquo;s happening, find the right
+                people, and decide what to do next.
+            </p>
+
             <form id="search-form" class="search-form">
                 <input
                     type="text"
                     id="company-input"
                     class="search-input"
-                    placeholder="Enter company name or URL"
+                    placeholder="Company name, URL or topic"
                     autocomplete="off"
                     required
                 />
                 <button type="submit" id="scout-btn" class="scout-btn">Scout</button>
             </form>
-            <p id="capacity" class="capacity hidden"></p>
+
             <div id="examples" class="examples">
                 <span class="examples-label">Try</span>
                 <button class="example-chip" type="button" data-q="Spiro">Spiro</button>
@@ -103,32 +116,50 @@
                 <button class="example-chip" type="button" data-q="Flutterwave">Flutterwave</button>
                 <button class="example-chip" type="button" data-q="Moniepoint">Moniepoint</button>
             </div>
-        </div>
+            <p id="capacity" class="capacity hidden"></p>
+        </section>
 
-        <!-- Recently scouted: populated from the cache, hidden when empty -->
+        <!-- Four things you can do. Equal cells, 1px dividers, the whole cell
+             is the target. -->
+        <section id="intro" class="action-row">
+            <button class="action-cell" type="button" data-focus-search>
+                <span class="action-index">01</span>
+                <span class="action-title">Research a company</span>
+                <span class="action-body">Build an evidence-backed intelligence brief.</span>
+                <span class="action-cta">Scout &rarr;</span>
+            </button>
+            <a class="action-cell" href="/about">
+                <span class="action-index">02</span>
+                <span class="action-title">Understand the scores</span>
+                <span class="action-body">Two numbers: worth your attention, and can you reach them.</span>
+                <span class="action-cta">How it works &rarr;</span>
+            </a>
+            <div class="action-cell is-soon">
+                <span class="action-index">03</span>
+                <span class="action-title">Find decision-makers</span>
+                <span class="action-body">Identify executives and public contact routes.</span>
+                <span class="action-cta soon">Soon</span>
+            </div>
+            <div class="action-cell is-soon">
+                <span class="action-index">04</span>
+                <span class="action-title">Discover companies</span>
+                <span class="action-body">Find companies matching a sector, market or signal.</span>
+                <span class="action-cta soon">Soon</span>
+            </div>
+        </section>
+
+        <!-- Recently scouted: already-paid-for reports, so surfacing them
+             turns a cache hit into the obvious next click. -->
         <div id="recent" class="recent hidden">
-            <h2 class="recent-title">Recently scouted</h2>
+            <h2 class="recent-title">Recent scouts</h2>
+            <div class="recent-head">
+                <span>Company</span>
+                <span>Attention</span>
+                <span>Reach</span>
+                <span>Verdict</span>
+                <span></span>
+            </div>
             <div id="recent-list" class="recent-list"></div>
-        </div>
-
-        <!-- What you get: only shown before a report exists -->
-        <div id="intro" class="intro">
-            <div class="intro-card">
-                <span class="intro-icon">◆</span>
-                <h3>Evidence, not vibes</h3>
-                <p>Every claim is traced to a dated source you can check.</p>
-            </div>
-            <div class="intro-card">
-                <span class="intro-icon">◆</span>
-                <h3>A number that means something</h3>
-                <p>Scored across story, case study, outreach and research — and it will tell you to skip.</p>
-            </div>
-            <div class="intro-card">
-                <span class="intro-icon">◆</span>
-                <h3>Recency counts</h3>
-                <p>A company that has gone quiet for three years scores like one.</p>
-            </div>
-            <p class="intro-more"><a class="about-link" href="/about">How it works, and what it won&rsquo;t tell you &rarr;</a></p>
         </div>
 
         <!-- Loading -->
