@@ -40,7 +40,7 @@ function renderContacts(contacts) {
                         <span class="contact-email">${escapeHtml(i.email)}</span>
                         <button class="copy-claim" type="button" data-email="${escapeHtml(i.email)}">Copy</button>
                     </div>
-                    <div class="contact-person">${escapeHtml(i.person)} &middot; pattern <code>${escapeHtml(i.pattern)}</code></div>
+                    <div class="contact-person">${escapeHtml(i.person)} &middot; <code>${escapeHtml(i.pattern)}</code> &middot; ${escapeHtml(i.basis || '')}</div>
                 </div>
             </div>
         `).join('');

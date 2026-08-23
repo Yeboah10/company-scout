@@ -65,6 +65,20 @@ class EmailFinding:
         return self.email.split("@", 1)[1]
 
 
+# Roughly how often each format turns up across companies generally. Used only
+# when the company's own pattern could not be observed, and never presented as
+# though it were specific to them.
+#
+# These are the shapes worth offering: beyond the top few the probability gets
+# thin enough that listing more would be noise dressed as help.
+COMMON_FORMATS = [
+    ("{first}.{last}", "about a third of companies"),
+    ("{first}", "common at smaller companies"),
+    ("{f}{last}", "common at larger companies"),
+    ("{first}{last}", "less common"),
+]
+
+
 @dataclass
 class ContactReport:
     company_domain: str | None = None
@@ -223,7 +237,12 @@ def build_report(
             guess = apply_pattern(pattern, domain, person)
             if guess and guess not in seen:
                 report.inferred.append(
-                    {"person": person, "email": guess, "pattern": pattern}
+                    {
+                        "person": person,
+                        "email": guess,
+                        "pattern": pattern,
+                        "basis": "observed at this company",
+                    }
                 )
 
     if report.found and report.inferred:
@@ -235,10 +254,40 @@ def build_report(
     elif report.found:
         report.note = f"{len(report.found)} address(es) published publicly."
     elif domain:
-        report.note = (
-            "No published addresses found, and no observed pattern to infer "
-            "from. Guessing a format without evidence would be a coin flip."
-        )
+        # Nothing published and no pattern to extrapolate. Rather than stop
+        # here, offer the formats companies most commonly use — explicitly as
+        # generic possibilities, not as anything derived from this company.
+        # Weaker than an observed pattern, and labelled so, but a starting
+        # point beats a dead end when the alternative is guessing unaided.
+        for person in people:
+            tokens = _tokens(person)
+            if not tokens:
+                continue
+            for fmt, prevalence in COMMON_FORMATS:
+                guess = apply_pattern(fmt, domain, person)
+                if guess:
+                    report.inferred.append(
+                        {
+                            "person": person,
+                            "email": guess,
+                            "pattern": fmt,
+                            "basis": f"common format — {prevalence}",
+                        }
+                    )
+
+        if report.inferred:
+            report.note = (
+                "No addresses were published anywhere findable, and none were "
+                "available to establish this company's format. The addresses "
+                "below are the formats companies most commonly use, applied to "
+                "the names found — untested guesses, not derived from this "
+                "company. Verify before sending anything that matters."
+            )
+        else:
+            report.note = (
+                "No published addresses found, and no names to build a "
+                "candidate address from."
+            )
     else:
         report.note = "No company domain identified, so no contact route found."
 

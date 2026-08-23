@@ -195,6 +195,10 @@ class InferredEmail(BaseModel):
     person: str
     email: str
     pattern: str
+    # How the guess was arrived at. An address extrapolated from one actually
+    # seen at this company is far stronger than one built from what companies
+    # generally do, and the reader has to be able to tell them apart.
+    basis: str = "observed at this company"
 
 
 class LinkedInProfile(BaseModel):

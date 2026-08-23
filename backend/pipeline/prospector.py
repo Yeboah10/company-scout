@@ -320,7 +320,12 @@ class Prospector:
                 guess = apply_pattern(hunter_pattern, domain, name)
                 if guess and guess not in known:
                     report.inferred.append(
-                        {"person": name, "email": guess, "pattern": hunter_pattern}
+                        {
+                            "person": name,
+                            "email": guess,
+                            "pattern": hunter_pattern,
+                            "basis": "observed at this company",
+                        }
                     )
             report.note = (
                 f"{len(report.found)} address(es) known publicly. "
@@ -345,7 +350,10 @@ class Prospector:
             ],
             inferred=[
                 InferredEmail(
-                    person=i["person"], email=i["email"], pattern=i["pattern"]
+                    person=i["person"],
+                    email=i["email"],
+                    pattern=i["pattern"],
+                    basis=i.get("basis", "observed at this company"),
                 )
                 for i in report.inferred
             ],
