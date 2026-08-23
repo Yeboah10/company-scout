@@ -5,6 +5,32 @@ from backend.services.search import SearchService
 from backend.services.sources import AFRICAN_TECH_PRESS
 
 
+# The things worth knowing about a company, each searched for deliberately.
+#
+# The previous queries were generic — "products services", "funding raised" —
+# and left the specifics to whatever happened to rank. Pula's evidence came
+# back with no mention of satellite data, which is central to what it sells,
+# because nothing ever asked how the product works.
+#
+# Named areas rather than a flat list, so evidence coverage can be reported
+# against them: knowing the technology question went unanswered is more useful
+# than a confidence score on the answers that did come back.
+COVERAGE_AREAS: list[tuple[str, str]] = [
+    ("identity", "what the company does products services"),
+    ("technology", "technology data platform how the product works"),
+    ("business_model", "business model revenue pricing how it makes money"),
+    ("capital", "funding raised investors valuation"),
+    ("customers", "customers users clients who uses it"),
+    ("geography", "markets countries operations expansion"),
+    ("people", "founders CEO leadership executives"),
+    ("recent", "news announcements {years}"),
+    # Explicitly adversarial. Every other query is framed positively, so
+    # trouble only surfaced when it happened to accompany good news — Twiga's
+    # 300 job cuts arrived attached to a funding story.
+    ("challenges", "challenges criticism losses layoffs shutdown problems"),
+]
+
+
 class CompanySearcher:
     def __init__(self, search: SearchService):
         self.search = search
@@ -19,11 +45,9 @@ class CompanySearcher:
         recent_years = f"{this_year - 1} {this_year}"
 
         queries: list[tuple[str, list[str] | None]] = [
-            (f"{name} {country} company overview products services", None),
-            (f"{name} {country} funding raised investment investors", None),
-            (f"{name} {country} recent news announcements {recent_years}", None),
-            (f"{name} founders CEO leadership team executives", None),
-            (f"{name} {country} expansion partnerships customers", None),
+            (f"{name} {country} {template.format(years=recent_years)}", None)
+            for _, template in COVERAGE_AREAS
+        ] + [
             # Two passes restricted to outlets that actually report on these
             # markets. Left to open search these are outranked by syndicated
             # press releases, so they are asked for directly instead.

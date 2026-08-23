@@ -23,7 +23,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from backend.pipeline.researcher import ResearchPipeline
-from backend.services.llm import QuotaExhaustedError
+from backend.config import settings
+from backend.services.llm import LLMService, QuotaExhaustedError
 
 EVAL_DIR = Path(__file__).resolve().parent
 COMPANIES_FILE = EVAL_DIR / "companies.json"
@@ -59,6 +60,71 @@ _STOPWORDS = {
 }
 
 
+JUDGE_PROMPT = """You are checking whether a research system found specific facts.
+
+You will be given evidence a system gathered about a company, and a list of
+facts it was expected to find.
+
+For each expected fact, decide whether the evidence contains it — judging by
+meaning, not wording. "Cut over 300 jobs in a restructuring" DOES establish
+"layoffs". "Area Yield Index Insurance" does NOT establish "satellite data",
+because they are different things.
+
+Return ONLY valid JSON:
+{"results": [{"expected": "<the fact verbatim>", "found": true, "why": "<the evidence, or what is absent>"}]}
+
+Be strict. A fact is found only if the evidence actually supports it, not if
+the topic is merely nearby."""
+
+
+def judge_findings(expected_items, text, llm):
+    """Ask a model whether each expected fact is genuinely present.
+
+    Keyword matching cannot do this. Requiring every word was far too strict —
+    Twiga's "cut over 300 jobs" scored "layoffs" as MISSED. Accepting any word
+    was far too loose — "parametric insurance" counted as found because the
+    word "insurance" appeared somewhere. Both produced a precise-looking
+    percentage that measured the matcher rather than the pipeline.
+
+    Costs one call per company, on the lite model so it does not compete with
+    the pipeline's own budget. Falls back to keyword matching when quota is
+    gone, and says which method was used.
+    """
+    if not expected_items:
+        return [], [], "none expected"
+
+    evidence = text[:12000]  # a long brief would otherwise dominate the prompt
+    prompt = (
+        f"EVIDENCE GATHERED:\n{evidence}\n\n"
+        f"EXPECTED FACTS:\n"
+        + "\n".join(f"- {e}" for e in expected_items)
+    )
+
+    try:
+        data = llm.extract_structured(JUDGE_PROMPT, prompt)
+        found, missed = [], []
+        for row in data.get("results", []):
+            item = row.get("expected", "")
+            # Match back to the original wording; the model may reformat.
+            original = next(
+                (e for e in expected_items if e.lower() in item.lower()
+                 or item.lower() in e.lower()),
+                item,
+            )
+            (found if row.get("found") else missed).append(original)
+
+        # Anything the model failed to rule on counts as missed rather than
+        # silently vanishing from the denominator.
+        judged = set(found) | set(missed)
+        missed += [e for e in expected_items if e not in judged]
+        return found, missed, "llm"
+    except Exception as e:
+        print(f"  ! Finding judge unavailable ({type(e).__name__}); "
+              f"falling back to keyword match", flush=True)
+        found, missed = _match_findings(expected_items, text)
+        return found, missed, "keyword (approximate)"
+
+
 def _match_findings(expected_items, text):
     """Approximate check that an expected fact turned up in the evidence.
 
@@ -89,7 +155,7 @@ def _match_findings(expected_items, text):
     return found, missed
 
 
-def run_company(company, pipeline):
+def run_company(company, pipeline, judge_llm):
     print(f"\n{'#'*70}")
     print(f"  [{company['id']}/{company['category']}] {company['name']} ({company['country']})")
     print(f"  Expected score range: {company['expected']['expected_score_range']}")
@@ -132,12 +198,13 @@ def run_company(company, pipeline):
         all_summary = (brief.analysis.executive_summary or "").lower()
         combined_text = all_claims_text + " " + all_summary
 
-        found, missed = _match_findings(
-            company["expected"]["should_find"], combined_text
+        found, missed, method = judge_findings(
+            company["expected"]["should_find"], combined_text, judge_llm
         )
 
         result["findings_found"] = found
         result["findings_missed"] = missed
+        result["findings_method"] = method
         result["findings_hit_rate"] = (
             len(found) / len(company["expected"]["should_find"])
             if company["expected"]["should_find"]
@@ -353,11 +420,13 @@ def main():
     )
 
     pipeline = ResearchPipeline()
+    # A separate lite model so judging does not eat the pipeline's budget.
+    judge_llm = LLMService(settings.llm_model_extractor)
     completed = 0
 
     for index, company in enumerate(companies):
         try:
-            result = run_company(company, pipeline)
+            result = run_company(company, pipeline, judge_llm)
         except QuotaExhaustedError as e:
             print(f"\n{'='*70}")
             # Plain ASCII: the Windows console encoding mangles an em-dash.
