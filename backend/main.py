@@ -1,3 +1,4 @@
+import hmac
 import time
 import traceback
 from collections import defaultdict
@@ -235,8 +236,31 @@ async def recent_scouts():
     return JSONResponse(content={"recent": cache.recent()})
 
 
+def _check_admin(request: Request) -> None:
+    """Gate the operational pages behind a single shared token.
+
+    One operator, so accounts and passwords would be machinery without a
+    benefit. Accepts the token from a header or a query parameter, the latter
+    so the page can be opened from a bookmark. Open when no token is set,
+    which is what local development wants.
+    """
+    expected = settings.admin_token
+    if not expected:
+        return
+    supplied = (
+        request.headers.get("x-admin-token")
+        or request.query_params.get("key")
+        or ""
+    )
+    # Constant-time compare: a plain != leaks the token a character at a time
+    # to anyone willing to measure.
+    if not hmac.compare_digest(supplied, expected):
+        raise HTTPException(status_code=404, detail="Not found")
+
+
 @app.get("/usage")
-async def usage_report():
+async def usage_report(request: Request):
+    _check_admin(request)
     """What has been spent against each provider's free tier.
 
     Counted by this process, so a restart loses history and the provider's own
@@ -267,6 +291,8 @@ async def usage_report():
 
 @app.get("/usage-page")
 async def usage_page():
+    # The shell is public; the numbers behind it are not. The page asks for
+    # the token and keeps it, so this stays bookmarkable.
     return FileResponse(str(FRONTEND_DIR / "usage.html"))
 
 

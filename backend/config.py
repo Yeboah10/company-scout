@@ -52,6 +52,12 @@ class Settings(BaseSettings):
     # an account registered with a work email address.
     apollo_api_key: str = ""
 
+    # Gates the operational pages. A single shared token rather than accounts:
+    # there is one operator, and real auth would mean storing credentials for
+    # no benefit. Left empty the pages stay open, which is what local
+    # development wants.
+    admin_token: str = ""
+
     # Error reporting. Off unless a DSN is set.
     sentry_dsn: str = ""
     sentry_environment: str = "production"

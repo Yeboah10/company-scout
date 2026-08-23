@@ -46,6 +46,13 @@ _ROLE_LOCALS = {
     "info", "contact", "hello", "hi", "support", "help", "sales", "press",
     "media", "admin", "enquiries", "inquiries", "careers", "jobs", "team",
     "office", "general", "marketing", "partnerships", "business",
+    # Compliance, legal and security inboxes. Kuda's dpo@ and fraud@ were
+    # being counted as a named person's address, which inflated how reachable
+    # the company looked.
+    "dpo", "privacy", "legal", "compliance", "security", "fraud", "risk",
+    "billing", "accounts", "finance", "invoices", "hr", "recruitment",
+    "complaints", "feedback", "service", "customercare", "customerservice",
+    "newsletter", "subscribe", "unsubscribe", "notifications", "alerts",
 }
 
 

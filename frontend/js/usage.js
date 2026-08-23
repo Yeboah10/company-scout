@@ -42,13 +42,38 @@ function meter(label, used, limit, remaining, extra) {
     `;
 }
 
+// The token arrives once in the URL and is kept, so the page stays
+// bookmarkable without the key sitting in the address bar afterwards.
+function adminToken() {
+    try {
+        const fromUrl = new URLSearchParams(window.location.search).get('key');
+        if (fromUrl) {
+            localStorage.setItem('scout-admin-token', fromUrl);
+            history.replaceState({}, '', window.location.pathname);
+            return fromUrl;
+        }
+        return localStorage.getItem('scout-admin-token') || '';
+    } catch {
+        return new URLSearchParams(window.location.search).get('key') || '';
+    }
+}
+
 async function loadUsage() {
     const body = document.getElementById('usage-body');
     body.innerHTML = '<p class="section-subtitle">Loading…</p>';
 
     let data;
     try {
-        const r = await fetch('/usage');
+        const r = await fetch('/usage', {
+            headers: { 'X-Admin-Token': adminToken() }
+        });
+        if (r.status === 404) {
+            body.innerHTML = '<p class="section-subtitle">'
+                + 'This page needs an access key. Open it as '
+                + '<code>/usage-page?key=YOUR_TOKEN</code> once and it will be remembered.'
+                + '</p>';
+            return;
+        }
         if (!r.ok) throw new Error('Could not read usage.');
         data = await r.json();
     } catch (e) {
