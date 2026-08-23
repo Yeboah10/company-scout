@@ -1,117 +1,187 @@
+@import url('https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&display=swap');
+
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
 }
 
-/* Africa Business School, UM6P.
-   Two brand colours: ABS amber and UM6P red.
+/* Modernist — Africa Business School, UM6P.
+   Flat, architectural, set in Archivo. Nothing floats and nothing is
+   decorated: 2px rules do the organising, corner radius is zero everywhere,
+   and the ground is warm paper rather than white.
 
-     --brand-amber  #f2a007   the ABS wordmark
-     --brand-red    #d9472b   the UM6P blocks
+   Two brand colours, and they mean different things:
 
-   Those two land exactly where a UI normally puts "warning" and "error", so
-   they are assigned deliberately rather than left to collide:
+     accent  #d84a28   UM6P red. Action, and only action — buttons, links,
+                       active nav, signal numerals, the question poster.
+     amber   #f0a000   ABS amber. Status only, and one status: THE EVIDENCE
+                       IS WEAKER HERE. Research gaps, inferred contacts,
+                       partial coverage, medium confidence. Using it
+                       decoratively destroys the signal, so it is never used
+                       for emphasis.
+     green   #3f6b4d   Verified. Found contacts, high confidence, covered
+                       areas.
 
-     amber  = action. Links, buttons, focus, the active step. The thing you
-              click is always this colour and nothing else is.
-     red    = caution. Errors, an exhausted quota, a role that has ended.
+   Contrast is measured, not assumed. Three values exist only because the
+   obvious one failed:
+     --accent-text   the base red is 3:1 on paper — fine for chrome and
+                     large type, not for paragraphs.
+     --accent-fill   white on #d84a28 is 4.26:1; a hair darker clears AA.
+     the dark ramp   the same reasoning inverted, not the light values
+                     flipped: red and green both have to lift off a dark
+                     ground or they read as brown and slate.
 
-   Both come from the same brand, so caution reads as part of the design
-   rather than as an alarm bolted onto it. Green and blue stay for source
-   tiers, where they carry a meaning neither brand colour should claim.
-
-   Dark is the base palette. Light is applied either by the OS preference or
-   by an explicit choice, which is stamped onto <html> as data-theme and wins
-   over the OS in both directions. */
+   Light is the designed ground. Dark is applied by OS preference or by an
+   explicit choice stamped on <html> as data-theme, which wins both ways. */
 :root {
-    --bg: #14100c;
-    --bg-card: #1f1a15;
-    --bg-card-hover: #292219;
-    --border: #383026;
-    --text: #f2ece4;
-    --text-muted: #b3a695;
-    --text-dim: #857a6c;
+    --ground: #f3f2f2;
+    --surface: #eae9e9;
+    --raised: #ffffff;
 
-    /* Brand, tuned for a dark ground. The amber is the logo value; the red is
-       lifted a little because #d9472b on near-black goes muddy. */
-    --brand-amber: #f2a007;
-    --brand-red: #e85a3a;
+    --ink: #201e1d;
+    --ink-60: #605d5d;
+    --ink-45: #7d7979;
 
-    --accent: #f2a007;
-    --accent-hover: #ffb62e;
-    /* Filled buttons hover *lighter*. --accent-hover darkens in light mode,
-       which is right for a link and wrong under dark text. */
-    --brand-amber-hover: #ffb62e;
-    /* Text that sits ON the amber. Dark, because amber is a light colour and
-       white on it fails contrast at every size that matters. */
-    --on-accent: #1a1208;
+    --rule: #201e1d;
+    --rule-soft: #d7d3d3;
 
-    --green: #4ade80;
-    --yellow: #f2a007;
-    --orange: #e85a3a;
-    --red: #e85a3a;
-    --blue: #60a5fa;
-    --shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
-    --glow: rgba(242, 160, 7, 0.14);
+    --accent: #d84a28;
+    --accent-hover: #b93a1c;
+    --accent-text: #962f16;
+    --accent-fill: #cf4423;
+    --on-accent: #ffffff;
+    --accent-100: #fbeeea;
+    --accent-200: #f6d9d0;
+
+    --amber: #f0a000;
+    --amber-100: #fdf2da;
+    --amber-700: #8a5c00;
+
+    --verified: #3f6b4d;
+    --verified-100: #e8efea;
+
+    --neutral-100: #f8f4f4;
+    --neutral-200: #eae7e7;
+    --neutral-300: #d7d3d3;
+    --neutral-400: #bab6b6;
+    --neutral-500: #9b9797;
+    --neutral-600: #7d7979;
+    --neutral-700: #605d5d;
+    --neutral-800: #444141;
+    --neutral-900: #2d2b2b;
+
+    --shadow-modal: 0 12px 32px rgba(45, 43, 43, 0.22);
+
+    /* Kept as names the existing components already use, remapped onto the
+       system above rather than left behind as a second palette. */
+    --bg: var(--ground);
+    --bg-card: var(--raised);
+    --bg-card-hover: var(--accent-100);
+    --border: var(--rule-soft);
+    --text: var(--ink);
+    --text-muted: var(--ink-60);
+    --text-dim: var(--ink-45);
+    --brand-amber: var(--amber);
+    --brand-amber-hover: var(--amber);
+    --brand-red: var(--accent);
+    --green: var(--verified);
+    --yellow: var(--amber-700);
+    --orange: var(--accent);
+    --red: var(--accent-text);
+    --blue: #1d4ed8;
+    --glow: var(--accent-100);
+    --shadow: none;
 }
 
-@media (prefers-color-scheme: light) {
-    :root:not([data-theme="dark"]) {
-        /* The logo amber fails contrast as text on white, so links and small
-           text use a darkened version of the same hue. Buttons keep the logo
-           value, where dark text on amber is comfortably readable. */
-        --brand-amber: #f2a007;
-        --brand-red: #d9472b;
-        --on-accent: #1a1208;
-        --bg: #faf7f2;
-        --bg-card: #ffffff;
-        --bg-card-hover: #f5f0e8;
-        --border: #e7dfd2;
-        --text: #3a3d42;
-        --text-muted: #6b6459;
-        --text-dim: #938b7e;
-        --accent: #965e00;
-        --accent-hover: #7a4c00;
-        --brand-amber-hover: #d98c00;
-        --green: #15803d;
-        --yellow: #965e00;
-        --orange: #c2410c;
-        --red: #c0392b;
-        --blue: #1d4ed8;
-        --shadow: 0 1px 3px rgba(58, 61, 66, 0.10);
-        --glow: rgba(242, 160, 7, 0.16);
+/* Dark. The ground is warm near-black rather than grey, so the paper feel
+   survives the inversion; the ink colour becomes the raised surface. */
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+        --ground: #171514;
+        --surface: #201e1d;
+        --raised: #201e1d;
+
+        --ink: #f3f2f2;
+        --ink-60: #b5b0ae;
+        --ink-45: #8f8a88;
+
+        --rule: #d7d3d3;
+        --rule-soft: #444141;
+
+        --accent: #d84a28;
+        --accent-hover: #ef7a5a;
+        --accent-text: #ef7a5a;
+        --accent-fill: #cf4423;
+        --on-accent: #ffffff;
+        --accent-100: #2a1a14;
+        --accent-200: #3a221a;
+
+        --amber: #f0a000;
+        --amber-100: #2e2411;
+        --amber-700: #f0a000;
+
+        --verified: #7cb890;
+        --verified-100: #1b2a21;
+
+        --neutral-100: #201e1d;
+        --neutral-200: #2d2b2b;
+        --neutral-300: #444141;
+        --neutral-400: #605d5d;
+        --neutral-500: #7d7979;
+        --neutral-600: #9b9797;
+        --neutral-700: #bab6b6;
+        --neutral-800: #d7d3d3;
+        --neutral-900: #eae7e7;
+
+        --shadow-modal: 0 12px 32px rgba(0, 0, 0, 0.55);
+        --blue: #60a5fa;
     }
 }
 
-:root[data-theme="light"] {
-    /* The logo amber fails contrast as text on white, so links and small
-       text use a darkened version of the same hue. Buttons keep the logo
-       value, where dark text on amber is comfortably readable. */
-    --brand-amber: #f2a007;
-    --brand-red: #d9472b;
-    --on-accent: #1a1208;
-    --bg: #faf7f2;
-    --bg-card: #ffffff;
-    --bg-card-hover: #f5f0e8;
-    --border: #e7dfd2;
-    --text: #3a3d42;
-    --text-muted: #6b6459;
-    --text-dim: #938b7e;
-    --accent: #965e00;
-    --accent-hover: #7a4c00;
-    --brand-amber-hover: #d98c00;
-    --green: #15803d;
-    --yellow: #965e00;
-    --orange: #c2410c;
-    --red: #c0392b;
-    --blue: #1d4ed8;
-    --shadow: 0 1px 3px rgba(58, 61, 66, 0.10);
-    --glow: rgba(242, 160, 7, 0.16);
+:root[data-theme="dark"] {
+    --ground: #171514;
+    --surface: #201e1d;
+    --raised: #201e1d;
+
+    --ink: #f3f2f2;
+    --ink-60: #b5b0ae;
+    --ink-45: #8f8a88;
+
+    --rule: #d7d3d3;
+    --rule-soft: #444141;
+
+    --accent: #d84a28;
+    --accent-hover: #ef7a5a;
+    --accent-text: #ef7a5a;
+    --accent-fill: #cf4423;
+    --on-accent: #ffffff;
+    --accent-100: #2a1a14;
+    --accent-200: #3a221a;
+
+    --amber: #f0a000;
+    --amber-100: #2e2411;
+    --amber-700: #f0a000;
+
+    --verified: #7cb890;
+    --verified-100: #1b2a21;
+
+    --neutral-100: #201e1d;
+    --neutral-200: #2d2b2b;
+    --neutral-300: #444141;
+    --neutral-400: #605d5d;
+    --neutral-500: #7d7979;
+    --neutral-600: #9b9797;
+    --neutral-700: #bab6b6;
+    --neutral-800: #d7d3d3;
+    --neutral-900: #eae7e7;
+
+    --shadow-modal: 0 12px 32px rgba(0, 0, 0, 0.55);
+    --blue: #60a5fa;
 }
 
 body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-family: "Archivo", system-ui, -apple-system, sans-serif;
     background: var(--bg);
     color: var(--text);
     min-height: 100vh;
@@ -151,7 +221,7 @@ body {
     font-size: 0.85rem;
     background: transparent;
     border: 1px solid var(--border);
-    border-radius: 999px;
+    border-radius: 0;
     color: var(--text-muted);
     cursor: pointer;
     transition: background 0.2s, border-color 0.2s, color 0.2s;
@@ -175,7 +245,7 @@ body {
 .intro-card {
     background: var(--bg-card);
     border: 1px solid var(--border);
-    border-radius: 12px;
+    border-radius: 0;
     padding: 18px;
 }
 
@@ -224,7 +294,7 @@ body {
     font-size: 1rem;
     background: var(--bg-card);
     border: 1px solid var(--border);
-    border-radius: 10px;
+    border-radius: 0;
     color: var(--text);
     outline: none;
     transition: border-color 0.2s;
@@ -248,7 +318,7 @@ body {
     background: var(--brand-amber);
     color: var(--on-accent);
     border: none;
-    border-radius: 10px;
+    border-radius: 0;
     cursor: pointer;
     transition: background 0.2s;
     white-space: nowrap;
@@ -274,7 +344,7 @@ body {
     height: 40px;
     border: 3px solid var(--border);
     border-top-color: var(--accent);
-    border-radius: 50%;
+    border-radius: 0;
     animation: spin 0.8s linear infinite;
     margin: 0 auto 20px;
 }
@@ -301,7 +371,7 @@ body {
     font-size: 0.85rem;
     color: var(--text-dim);
     padding: 6px 12px;
-    border-radius: 6px;
+    border-radius: 0;
     transition: all 0.3s;
 }
 
@@ -327,7 +397,7 @@ body {
     padding: 40px;
     background: rgba(239, 68, 68, 0.1);
     border: 1px solid rgba(239, 68, 68, 0.3);
-    border-radius: 12px;
+    border-radius: 0;
     margin: 20px 0;
 }
 
@@ -340,7 +410,7 @@ body {
     padding: 8px 20px;
     background: var(--bg-card);
     border: 1px solid var(--border);
-    border-radius: 8px;
+    border-radius: 0;
     color: var(--text);
     cursor: pointer;
 }
@@ -349,7 +419,7 @@ body {
 .score-banner {
     background: var(--bg-card);
     border: 1px solid var(--border);
-    border-radius: 14px;
+    border-radius: 0;
     padding: 28px;
     margin-bottom: 20px;
 }
@@ -377,7 +447,7 @@ body {
 
 .score-badge {
     padding: 6px 14px;
-    border-radius: 20px;
+    border-radius: 0;
     font-size: 0.8rem;
     font-weight: 700;
     text-transform: uppercase;
@@ -482,7 +552,7 @@ body {
 .score-card {
     background: var(--bg-card);
     border: 1px solid var(--border);
-    border-radius: 10px;
+    border-radius: 0;
     padding: 16px;
 }
 
@@ -514,7 +584,7 @@ body {
 .card {
     background: var(--bg-card);
     border: 1px solid var(--border);
-    border-radius: 10px;
+    border-radius: 0;
     padding: 18px;
     margin-bottom: 10px;
     transition: background 0.2s;
@@ -558,7 +628,7 @@ body {
 .confidence {
     display: inline-block;
     padding: 2px 8px;
-    border-radius: 4px;
+    border-radius: 0;
     font-size: 0.7rem;
     font-weight: 600;
     text-transform: uppercase;
@@ -572,7 +642,7 @@ body {
 .tier-badge {
     display: inline-block;
     padding: 2px 8px;
-    border-radius: 4px;
+    border-radius: 0;
     font-size: 0.7rem;
     font-weight: 600;
 }
@@ -662,7 +732,7 @@ body {
     padding: 8px 16px;
     background: var(--bg-card);
     border: 1px solid var(--border);
-    border-radius: 8px;
+    border-radius: 0;
     color: var(--text-muted);
     cursor: pointer;
     font-size: 0.85rem;
@@ -792,7 +862,7 @@ body {
     font-family: inherit;
     background: transparent;
     border: 1px solid var(--border);
-    border-radius: 999px;
+    border-radius: 0;
     color: var(--text-dim);
     cursor: pointer;
     transition: background 0.2s, border-color 0.2s, color 0.2s;
@@ -807,7 +877,7 @@ body {
 .changelog-dot {
     width: 6px;
     height: 6px;
-    border-radius: 50%;
+    border-radius: 0;
     background: var(--green);
     flex-shrink: 0;
 }
@@ -829,7 +899,7 @@ body {
     flex-direction: column;
     background: var(--bg-card);
     border: 1px solid var(--border);
-    border-radius: 14px;
+    border-radius: 0;
     box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
     z-index: 50;
 }
@@ -912,7 +982,7 @@ body {
     top: 8px;
     width: 5px;
     height: 5px;
-    border-radius: 50%;
+    border-radius: 0;
     background: var(--border);
 }
 
@@ -955,7 +1025,7 @@ body {
     padding: 12px 14px;
     background: var(--bg-card);
     border: 1px solid var(--border);
-    border-radius: 10px;
+    border-radius: 0;
     text-decoration: none;
     color: var(--text);
     transition: background 0.2s, border-color 0.2s, transform 0.15s;
@@ -1015,7 +1085,7 @@ body {
     font-family: inherit;
     background: transparent;
     border: 1px solid var(--border);
-    border-radius: 6px;
+    border-radius: 0;
     color: var(--text-dim);
     cursor: pointer;
     transition: background 0.2s, color 0.2s, border-color 0.2s;
@@ -1049,7 +1119,7 @@ body {
     );
     background-size: 200% 100%;
     animation: sk-shimmer 1.4s ease-in-out infinite;
-    border-radius: 8px;
+    border-radius: 0;
 }
 
 @keyframes sk-shimmer {
@@ -1065,7 +1135,7 @@ body {
 .skeleton-banner {
     padding: 24px;
     border: 1px solid var(--border);
-    border-radius: 14px;
+    border-radius: 0;
     margin-bottom: 18px;
 }
 
@@ -1153,7 +1223,7 @@ body {
 
 .contact-kind {
     padding: 2px 8px;
-    border-radius: 999px;
+    border-radius: 0;
     font-size: 0.68rem;
     font-weight: 700;
     text-transform: uppercase;
@@ -1195,7 +1265,7 @@ a.contact-email:hover { color: var(--accent); text-decoration: underline; }
 .contact-card code {
     font-size: 0.8rem;
     padding: 1px 5px;
-    border-radius: 4px;
+    border-radius: 0;
     background: var(--bg-card-hover);
 }
 
@@ -1221,7 +1291,7 @@ a.contact-email:hover { color: var(--accent); text-decoration: underline; }
     margin-bottom: 24px;
     background: var(--bg-card);
     border: 1px solid var(--border);
-    border-radius: 14px;
+    border-radius: 0;
     font-size: 1.15rem;
 }
 
@@ -1250,13 +1320,13 @@ a.contact-email:hover { color: var(--accent); text-decoration: underline; }
 .usage-bar {
     height: 8px;
     background: var(--bg-card-hover);
-    border-radius: 999px;
+    border-radius: 0;
     overflow: hidden;
 }
 
 .usage-fill {
     height: 100%;
-    border-radius: 999px;
+    border-radius: 0;
     transition: width 0.3s;
 }
 
@@ -1277,7 +1347,7 @@ a.contact-email:hover { color: var(--accent); text-decoration: underline; }
     padding: 14px 16px;
     background: var(--bg-card);
     border: 1px solid var(--border);
-    border-radius: 10px;
+    border-radius: 0;
     color: var(--text-muted);
     font-size: 0.82rem;
     line-height: 1.6;
@@ -1372,7 +1442,7 @@ a.contact-email:hover { color: var(--accent); text-decoration: underline; }
     align-items: baseline;
     gap: 0.6rem;
     padding: 0.45rem 0.6rem;
-    border-radius: 6px;
+    border-radius: 0;
     font-size: 0.92rem;
 }
 
@@ -1472,7 +1542,7 @@ a.contact-email:hover { color: var(--accent); text-decoration: underline; }
 .score-explain-card {
     background: var(--bg-card);
     border: 1px solid var(--border);
-    border-radius: 10px;
+    border-radius: 0;
     padding: 16px;
 }
 
@@ -1570,7 +1640,7 @@ a.contact-email:hover { color: var(--accent); text-decoration: underline; }
 .options-toggle {
     width: 38px;
     height: 38px;
-    border-radius: 10px;
+    border-radius: 0;
     border: 1px solid var(--border);
     background: var(--bg-card);
     color: var(--text-muted);
@@ -1594,7 +1664,7 @@ a.contact-email:hover { color: var(--accent); text-decoration: underline; }
     min-width: 236px;
     background: var(--bg-card);
     border: 1px solid var(--border);
-    border-radius: 12px;
+    border-radius: 0;
     box-shadow: 0 8px 28px rgba(0, 0, 0, 0.28);
     padding: 6px;
     display: grid;
@@ -1610,7 +1680,7 @@ a.contact-email:hover { color: var(--accent); text-decoration: underline; }
     padding: 9px 10px;
     border: none;
     background: none;
-    border-radius: 8px;
+    border-radius: 0;
     color: var(--text);
     font: inherit;
     font-size: 0.92rem;
@@ -1646,10 +1716,243 @@ a.contact-email:hover { color: var(--accent); text-decoration: underline; }
     width: 54px;
     height: 3px;
     margin: 18px auto 0;
-    border-radius: 2px;
+    border-radius: 0;
     background: linear-gradient(
         90deg,
         var(--brand-red) 0 50%,
         var(--brand-amber) 50% 100%
     );
 }
+
+/* ══════════════════════════════════════════════════════════════════════
+   Modernist component layer. Applied after the older rules so the system's
+   decisions win without having to unpick every earlier declaration.
+   ══════════════════════════════════════════════════════════════════════ */
+
+body {
+    -webkit-font-smoothing: antialiased;
+    background: var(--ground);
+}
+
+/* Labels sit flush left, including inside buttons: a button wider than its
+   label starts the text at the left padding edge, never centred. */
+.scout-btn,
+.download-btn,
+.options-item,
+.error-close {
+    font-family: "Archivo", system-ui, sans-serif;
+    letter-spacing: 0;
+}
+
+.scout-btn {
+    background: var(--accent-fill);
+    color: var(--on-accent);
+    font-weight: 700;
+    padding: 14px 22px;
+}
+
+.scout-btn:hover {
+    background: var(--accent-hover);
+    color: var(--on-accent);
+}
+
+/* The search row is one object: input and button butted together with no gap
+   and no radius, the way the design draws it. */
+.search-form {
+    gap: 0;
+}
+
+.search-input {
+    border: 2px solid var(--rule);
+    border-right: none;
+    background: var(--raised);
+}
+
+.search-input:focus {
+    border-color: var(--accent);
+}
+
+/* Section labels — small, spaced, uppercase, and used for every heading. */
+.section h3,
+.recent-title {
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ink-45);
+}
+
+.logo {
+    font-weight: 800;
+    letter-spacing: -0.04em;
+    text-transform: uppercase;
+    line-height: 0.94;
+}
+
+/* Rules do the organising, so cards lose their shadows and keep an edge. */
+.card,
+.intro-card,
+.use-card,
+.score-explain-card,
+.options-menu {
+    box-shadow: none;
+    border: 1px solid var(--rule-soft);
+    background: var(--raised);
+}
+
+.tier-badge,
+.confidence,
+.score-badge,
+.contact-kind {
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+}
+
+/* The brand rule under the header: UM6P red beside ABS amber. */
+.header::after {
+    background: linear-gradient(
+        90deg,
+        var(--accent) 0 50%,
+        var(--amber) 50% 100%
+    );
+}
+
+*:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
+/* ---------- Sign in ----------
+   Left-aligned and narrow rather than a centred card floating on a gradient.
+   The page is a door, not a landing page: identity, two fields, one action. */
+.login-body {
+    display: flex;
+    align-items: center;
+    min-height: 100vh;
+    padding: 32px 24px;
+}
+
+.login-shell {
+    width: 100%;
+    max-width: 380px;
+    margin: 0 auto;
+}
+
+.login-brand {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 22px;
+}
+
+.login-mark {
+    width: 11px;
+    height: 11px;
+    display: inline-block;
+}
+
+.login-mark-red { background: var(--accent); }
+.login-mark-amber { background: var(--amber); }
+
+.login-brand-label {
+    margin-left: 4px;
+    font-size: 8.5px;
+    font-weight: 600;
+    letter-spacing: 0.16em;
+    color: var(--ink-45);
+}
+
+.login-title {
+    font-size: 40px;
+    font-weight: 800;
+    line-height: 0.92;
+    letter-spacing: -0.04em;
+    text-transform: uppercase;
+}
+
+.login-kicker {
+    margin-top: 12px;
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--accent-text);
+}
+
+.login-form {
+    margin-top: 32px;
+    padding-top: 24px;
+    border-top: 2px solid var(--rule);
+}
+
+.login-label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--ink-45);
+}
+
+.login-input {
+    width: 100%;
+    margin-bottom: 18px;
+    padding: 12px 14px;
+    font-family: "Archivo", system-ui, sans-serif;
+    font-size: 15px;
+    color: var(--ink);
+    background: var(--raised);
+    border: 2px solid var(--rule);
+    outline: none;
+}
+
+.login-input:focus {
+    border-color: var(--accent);
+}
+
+/* Flush-left label, per the system: the text starts at the padding edge even
+   though the button is full width. */
+.login-submit {
+    width: 100%;
+    padding: 13px 16px;
+    font-family: "Archivo", system-ui, sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    text-align: left;
+    color: var(--on-accent);
+    background: var(--accent-fill);
+    border: none;
+    cursor: pointer;
+}
+
+.login-submit:hover {
+    background: var(--accent-hover);
+}
+
+.login-error {
+    margin-top: 16px;
+    padding: 10px 12px;
+    font-size: 13px;
+    color: var(--accent-text);
+    background: var(--accent-100);
+    border-left: 3px solid var(--accent);
+}
+
+.login-note {
+    margin-top: 28px;
+    padding-top: 16px;
+    border-top: 1px solid var(--rule-soft);
+    font-size: 12px;
+    line-height: 1.55;
+    color: var(--ink-45);
+}
+
+.login-note code {
+    font-size: 11.5px;
+    color: var(--ink-60);
+}
+
+.options-signout { margin: 0; }
+.options-signout .options-item { width: 100%; }

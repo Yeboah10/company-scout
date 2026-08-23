@@ -4,9 +4,15 @@ import traceback
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
+from urllib.parse import quote
 
-from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse
+from fastapi import FastAPI, Form, HTTPException, Request
+from fastapi.responses import (
+    FileResponse,
+    JSONResponse,
+    PlainTextResponse,
+    RedirectResponse,
+)
 from fastapi.staticfiles import StaticFiles
 
 from backend.config import settings
@@ -15,7 +21,7 @@ from backend.pipeline.researcher import InsufficientEvidenceError, ResearchPipel
 from backend.services.cache import BriefCache
 from backend.services.jobs import TOTAL_STAGES, JobStore
 from backend.services.llm import QuotaExhaustedError
-from backend.services import monitoring
+from backend.services import auth, db, monitoring
 from backend.services.apollo import is_configured as apollo_configured
 from backend.services import hunter
 from backend.services.report import brief_to_markdown
@@ -35,6 +41,36 @@ app = FastAPI(
 app.mount("/static", StaticFiles(directory=str(FRONTEND_DIR)), name="static")
 
 executor = ThreadPoolExecutor(max_workers=2)
+
+# Paths that stay reachable without signing in.
+#
+# The share links are the important entry here. Sharing a finished brief is
+# what the product is for, and a login wall in front of /r/{key} would break
+# the one thing a reader is meant to do with one. The explainer page is public
+# for the same reason: it is how someone decides whether to ask for access.
+PUBLIC_PREFIXES = ("/static/", "/r/", "/report/")
+PUBLIC_PATHS = {"/login", "/logout", "/health", "/about", "/favicon.ico"}
+
+
+@app.middleware("http")
+async def require_sign_in(request: Request, call_next):
+    """Send anyone without a session to the sign-in page.
+
+    Inert until AUTH_PASSWORD is set, so deploying this cannot lock anybody
+    out of their own site — including in local development, where there is no
+    password and everything behaves exactly as before.
+    """
+    path = request.url.path
+    public = path in PUBLIC_PATHS or path.startswith(PUBLIC_PREFIXES)
+
+    if not public and not auth.is_signed_in(request):
+        # An API call gets a status it can act on; a browser gets the door,
+        # carrying where it was headed so the trip resumes after sign-in.
+        if request.headers.get("accept", "").startswith("application/json"):
+            return JSONResponse({"detail": "Sign in required"}, status_code=401)
+        return RedirectResponse(f"/login?next={quote(path)}", status_code=303)
+
+    return await call_next(request)
 
 # The Gemini free tier caps out at 20 requests/day total, so a handful of
 # visitors can exhaust it. This limits any single visitor to a few runs
@@ -309,6 +345,53 @@ async def usage_report(request: Request):
     return JSONResponse(content=snapshot)
 
 
+@app.get("/login")
+async def login_page(request: Request):
+    # Already signed in, or sign-in is switched off: no reason to show a door
+    # that is standing open.
+    if auth.is_signed_in(request):
+        return RedirectResponse("/", status_code=303)
+    return FileResponse(str(FRONTEND_DIR / "login.html"))
+
+
+@app.post("/login")
+async def login_submit(
+    request: Request,
+    email: str = Form(""),
+    password: str = Form(""),
+    next: str = Form("/"),
+):
+    expected_email = settings.auth_email
+    email_ok = (not expected_email) or hmac.compare_digest(
+        email.strip().lower(), expected_email.strip().lower()
+    )
+    if not (email_ok and auth.check_password(password)):
+        # One message for both failures. Saying which half was wrong tells an
+        # attacker whether the address exists.
+        return RedirectResponse("/login?error=1", status_code=303)
+
+    # Only ever redirect within this site; an open redirect turns a login page
+    # into a convincing way to send someone somewhere else.
+    target = next if next.startswith("/") and not next.startswith("//") else "/"
+    response = RedirectResponse(target, status_code=303)
+    response.set_cookie(
+        auth.COOKIE_NAME,
+        auth.issue(email.strip().lower()),
+        max_age=auth.SESSION_MAX_AGE,
+        httponly=True,
+        samesite="lax",
+        secure=True,
+    )
+    return response
+
+
+@app.post("/logout")
+async def logout():
+    response = RedirectResponse("/login", status_code=303)
+    response.delete_cookie(auth.COOKIE_NAME)
+    return response
+
+
 @app.get("/about")
 async def about_page():
     """What the tool does, how to read it, and what it will not tell you.
@@ -364,4 +447,11 @@ async def health():
     is part of whether the service is healthy, and a monitoring outage is
     otherwise invisible by definition.
     """
-    return {"status": "ok", "monitoring": monitoring.is_enabled()}
+    return {
+        "status": "ok",
+        "monitoring": monitoring.is_enabled(),
+        # Configured and working are different facts, and only the second one
+        # predicts whether the next write succeeds.
+        "database": db.status(),
+        "auth": "enabled" if auth.is_enabled() else "open",
+    }

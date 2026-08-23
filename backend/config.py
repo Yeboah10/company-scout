@@ -58,6 +58,21 @@ class Settings(BaseSettings):
     # development wants.
     admin_token: str = ""
 
+    # Postgres. The cache answers "serve this report again quickly"; this
+    # answers "what did this company look like last month", which a cache with
+    # a seven-day expiry structurally cannot.
+    database_url: str = ""
+
+    # Sign-in. Unset, the site behaves exactly as it does now — so deploying
+    # this cannot lock anyone out of their own site by accident. A shared
+    # report link stays public either way; that is the point of sharing one.
+    auth_email: str = ""
+    auth_password: str = ""
+    # Signs the session cookie. Unset, a random per-process value is used,
+    # which works but signs everyone out on every restart — and Render
+    # restarts often.
+    session_secret: str = ""
+
     # Error reporting. Off unless a DSN is set.
     sentry_dsn: str = ""
     sentry_environment: str = "production"
