@@ -169,6 +169,17 @@ class UsageTracker:
             self._c.hunter += n
             self._persist()
 
+    def hunter_remaining(self) -> int:
+        """Lookups believed left this month.
+
+        A floor, not a measurement: this counts what this process spent, and
+        Hunter counts everything on the account. Used to stop spending, never
+        to promise headroom.
+        """
+        with self._lock:
+            self._roll()
+            return max(0, HUNTER_MONTHLY - self._c.hunter)
+
     def record_apollo(self, n: int = 1) -> None:
         with self._lock:
             self._roll()

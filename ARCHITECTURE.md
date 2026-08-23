@@ -10,7 +10,9 @@ whole codebase. **If you want to change X, open Y.**
 | What you want to change | File |
 |---|---|
 | Which websites are trusted, blocked, or preferred | `backend/services/sources.py` |
-| What gets searched for | `backend/pipeline/searcher.py` |
+| What gets searched for | `backend/services/coverage.py` (the nine areas) |
+| How the searches are assembled | `backend/pipeline/searcher.py` |
+| What the brief says it failed to find | `backend/services/coverage.py` |
 | How a company name is resolved to a real company | `backend/pipeline/resolver.py` |
 | What facts get pulled out of pages | `backend/pipeline/extractor.py` |
 | Signals, story angles, case-study and outreach analysis | `backend/pipeline/analyst.py` |
@@ -61,7 +63,8 @@ the only file that knows the order.
 | `jobs.py` | Background job state for polling |
 | `recency.py` | Evidence dates → a score multiplier |
 | `contacts.py` | Address parsing, pattern detection, inference |
-| `hunter.py` | Optional Hunter.io enrichment |
+| `hunter.py` | Optional Hunter.io enrichment, and whether the key works |
+| `coverage.py` | The nine research areas, and which came back empty |
 | `report.py` | Brief → Markdown |
 
 ---

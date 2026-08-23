@@ -246,6 +246,17 @@
             </div>
 
             <div id="tab-sources" class="tab-panel">
+                <!-- Hidden on briefs researched before coverage existed. -->
+                <div id="coverage-section" class="section hidden">
+                    <h3>Coverage</h3>
+                    <p class="section-subtitle">
+                        Nine things the search deliberately asks about. A gap means nothing
+                        usable came back &mdash; usually a fact about the public record rather
+                        than a verdict on the company, but worth checking by hand.
+                    </p>
+                    <p id="coverage-headline" class="coverage-headline"></p>
+                    <div id="coverage-list" class="coverage-list"></div>
+                </div>
                 <div class="section">
                     <h3>Source Ledger</h3>
                     <div id="source-stats" class="source-stats"></div>

@@ -1,34 +1,14 @@
 from datetime import date
 
 from backend.models.schemas import CompanyIdentity, SearchResult
+from backend.services.coverage import COVERAGE_AREAS
 from backend.services.search import SearchService
 from backend.services.sources import AFRICAN_TECH_PRESS
 
-
-# The things worth knowing about a company, each searched for deliberately.
-#
-# The previous queries were generic — "products services", "funding raised" —
-# and left the specifics to whatever happened to rank. Pula's evidence came
-# back with no mention of satellite data, which is central to what it sells,
-# because nothing ever asked how the product works.
-#
-# Named areas rather than a flat list, so evidence coverage can be reported
-# against them: knowing the technology question went unanswered is more useful
-# than a confidence score on the answers that did come back.
-COVERAGE_AREAS: list[tuple[str, str]] = [
-    ("identity", "what the company does products services"),
-    ("technology", "technology data platform how the product works"),
-    ("business_model", "business model revenue pricing how it makes money"),
-    ("capital", "funding raised investors valuation"),
-    ("customers", "customers users clients who uses it"),
-    ("geography", "markets countries operations expansion"),
-    ("people", "founders CEO leadership executives"),
-    ("recent", "news announcements {years}"),
-    # Explicitly adversarial. Every other query is framed positively, so
-    # trouble only surfaced when it happened to accompany good news — Twiga's
-    # 300 job cuts arrived attached to a funding story.
-    ("challenges", "challenges criticism losses layoffs shutdown problems"),
-]
+# The areas themselves live in services/coverage.py, next to the code that
+# reports on them: a question the search stops asking and a gap the brief stops
+# reporting are the same edit, and splitting them across two files is how they
+# drift apart.
 
 
 class CompanySearcher:
@@ -46,7 +26,7 @@ class CompanySearcher:
 
         queries: list[tuple[str, list[str] | None]] = [
             (f"{name} {country} {template.format(years=recent_years)}", None)
-            for _, template in COVERAGE_AREAS
+            for _, _, template in COVERAGE_AREAS
         ] + [
             # Two passes restricted to outlets that actually report on these
             # markets. Left to open search these are outranked by syndicated
@@ -55,4 +35,10 @@ class CompanySearcher:
             (f"{name} funding launch expansion {recent_years}", AFRICAN_TECH_PRESS),
         ]
 
-        return self.search.search_multiple(queries, max_results_per_query=5)
+        # The African-press passes are broad by design and belong to no single
+        # area, so they carry no label rather than a misleading one.
+        areas = [key for key, _, _ in COVERAGE_AREAS] + ["", ""]
+
+        return self.search.search_multiple(
+            queries, max_results_per_query=5, areas=areas
+        )

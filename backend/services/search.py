@@ -93,9 +93,14 @@ class SearchService:
         self,
         queries: list[str] | list[tuple[str, list[str] | None]],
         max_results_per_query: int = 5,
+        areas: list[str] | None = None,
     ) -> list[SearchResult]:
         """Run queries concurrently. An entry may be a bare query string, or a
-        (query, include_domains) pair to restrict it to specific publishers."""
+        (query, include_domains) pair to restrict it to specific publishers.
+
+        `areas`, when given, names what each query was asked on behalf of and
+        is recorded on every result it returns, so the brief can later report
+        which questions went unanswered."""
         # The queries are independent, so run them concurrently. Results are
         # then merged in the original query order to keep output stable.
         def run(item) -> list[SearchResult]:
@@ -115,10 +120,19 @@ class SearchService:
             per_query = list(pool.map(run, queries))
 
         all_results = []
-        seen_urls = set()
-        for results in per_query:
+        by_url: dict[str, SearchResult] = {}
+        for i, results in enumerate(per_query):
+            area = areas[i] if areas and i < len(areas) else None
             for r in results:
-                if r.url not in seen_urls:
-                    seen_urls.add(r.url)
+                existing = by_url.get(r.url)
+                if existing is None:
+                    if area:
+                        r.areas = [area]
+                    by_url[r.url] = r
                     all_results.append(r)
+                elif area and area not in existing.areas:
+                    # Credit every area that surfaced the page, not just the
+                    # first: deduplicating the URL should not deduplicate the
+                    # fact that two different questions led here.
+                    existing.areas.append(area)
         return all_results

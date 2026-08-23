@@ -212,6 +212,32 @@ function renderBrief(brief) {
         copyText(text, btn);
     };
 
+    // Coverage — what the research went looking for and did not find.
+    // Rendered above the source list because a gap changes how the rest of
+    // the tab should be read.
+    const coverage = evidence.coverage;
+    const coverageEl = document.getElementById('coverage-section');
+    if (coverage && (coverage.areas || []).length) {
+        coverageEl.classList.remove('hidden');
+        const gaps = coverage.gaps || [];
+        document.getElementById('coverage-headline').innerHTML =
+            `<strong>${coverage.covered_count}/${coverage.total_areas}</strong> areas produced evidence`
+            + (gaps.length
+                ? ` &mdash; nothing found on <strong>${esc(gaps.join(', '))}</strong>.`
+                : ' &mdash; every area the search asked about came back with something.');
+        document.getElementById('coverage-list').innerHTML = coverage.areas.map(a => `
+            <div class="coverage-row ${a.covered ? 'covered' : 'gap'}">
+                <span class="coverage-mark">${a.covered ? '&check;' : '&mdash;'}</span>
+                <span class="coverage-label">${esc(a.label)}</span>
+                <span class="coverage-detail">${a.covered
+                    ? `${a.claims} claim${a.claims === 1 ? '' : 's'}`
+                    : 'nothing usable'}</span>
+            </div>
+        `).join('');
+    } else {
+        coverageEl.classList.add('hidden');
+    }
+
     // Sources
     const sources = evidence.sources || [];
     const tier1 = sources.filter(s => s.source_quality === 'tier_1').length;

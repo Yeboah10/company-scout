@@ -15,6 +15,7 @@ from backend.pipeline.prospector import Prospector
 from backend.pipeline.scorer import CompanyScorer
 from backend.pipeline.searcher import CompanySearcher
 from backend.services.cache import BriefCache
+from backend.services.coverage import measure as measure_coverage
 from backend.config import settings
 from backend.services.llm import LLMService
 from backend.services.search import SearchService
@@ -193,6 +194,23 @@ class ResearchPipeline:
             sources=sources,
             raw_search_results=all_results,
         )
+        # Costs nothing — it reads what has already been gathered — so it runs
+        # before analysis, where a gap can be reported even if a later stage
+        # fails.
+        evidence.coverage = measure_coverage(evidence)
+        if evidence.coverage.gaps:
+            print(
+                f"       > Coverage {evidence.coverage.covered_count}/"
+                f"{evidence.coverage.total_areas} — nothing found on: "
+                f"{', '.join(evidence.coverage.gaps)}",
+                flush=True,
+            )
+        else:
+            print(
+                f"       > Coverage {evidence.coverage.covered_count}/"
+                f"{evidence.coverage.total_areas} — every area produced evidence",
+                flush=True,
+            )
 
         report(4, "Analysing strategic signals and opportunities...")
         analysis = self.analyst.analyse(evidence)

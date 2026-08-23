@@ -178,6 +178,29 @@ def brief_to_markdown(brief: CompanyBrief) -> str:
                 out.append(f"  - Source: [{c.source.title}]({c.source.url})\n")
         out.append("\n")
 
+    cov = evidence.coverage
+    if cov and cov.areas:
+        out.append(f"## Coverage — {cov.covered_count}/{cov.total_areas} areas\n\n")
+        out.append(
+            "What the research set out to learn, and where it came back "
+            "empty-handed. A gap is a fact about the public record, not a "
+            "verdict on the company.\n\n"
+        )
+        for a in cov.areas:
+            mark = "x" if a.covered else " "
+            detail = (
+                f"{a.claims} claim(s) from {a.results} result(s)"
+                if a.covered
+                else f"nothing usable from {a.results} result(s)"
+            )
+            out.append(f"- [{mark}] **{a.label}** — {detail}\n")
+        if cov.gaps:
+            out.append(
+                f"\n**Nothing was found on: {', '.join(cov.gaps)}.** "
+                "Worth checking by hand before relying on this brief.\n"
+            )
+        out.append("\n")
+
     if evidence.sources:
         tiers = {"tier_1": 0, "tier_2": 0, "tier_3": 0}
         for s in evidence.sources:

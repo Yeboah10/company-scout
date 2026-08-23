@@ -26,6 +26,26 @@ function barClass(remaining, limit) {
     return 'ok';
 }
 
+// A key that is set and a key that works are different facts, and only the
+// second one predicts whether the next scout finds an address. Asked of
+// Hunter directly rather than inferred from our own configuration.
+function hunterStatus(h) {
+    if (!h.configured) return '';
+    if (h.valid === true) {
+        return '<p class="section-subtitle">Key checked against Hunter and working.</p>';
+    }
+    if (h.valid === false) {
+        return '<p class="section-subtitle warning">'
+            + 'Key is set but <strong>Hunter rejected it</strong>'
+            + (h.reason ? ` (${escapeHtml(h.reason)})` : '')
+            + '. Contact discovery is running without it.</p>';
+    }
+    return '<p class="section-subtitle">'
+        + 'Key is set, but it could not be checked just now'
+        + (h.reason ? ` (${escapeHtml(h.reason)})` : '')
+        + '. Unknown, not confirmed.</p>';
+}
+
 function meter(label, used, limit, remaining, extra) {
     const pct = limit ? Math.min(100, Math.round((used / limit) * 100)) : 0;
     return `
@@ -130,10 +150,13 @@ async function loadUsage() {
 
         <div class="section">
             <h3>Hunter — email lookup by domain</h3>
+            ${hunterStatus(data.hunter)}
             ${data.hunter.configured
                 ? meter('Lookups this month', data.hunter.used, data.hunter.limit,
                         data.hunter.remaining,
-                        `${data.hunter.remaining} left · resets in ${humaniseDuration(data.hunter.resets_in_seconds)}`)
+                        `${data.hunter.remaining} left · ${data.hunter.authoritative
+                            ? 'counted by Hunter'
+                            : 'counted here'} · resets in ${humaniseDuration(data.hunter.resets_in_seconds)}`)
                 : '<p class="section-subtitle">Not configured. Set HUNTER_API_KEY to enable email lookups.</p>'}
         </div>
     `;

@@ -178,6 +178,15 @@ def run_company(company, pipeline, judge_llm):
             "sources_count": len(brief.evidence.sources),
             "signals_count": len(brief.analysis.signals),
             "story_angles_count": len(brief.analysis.story_angles),
+            # Which of the nine research questions came back empty. A run that
+            # scored well on six areas and learned nothing about the other
+            # three is a different result from one that covered all nine, and
+            # the score alone cannot tell them apart.
+            "coverage": {
+                "covered": brief.evidence.coverage.covered_count,
+                "total": brief.evidence.coverage.total_areas,
+                "gaps": brief.evidence.coverage.gaps,
+            } if brief.evidence.coverage else None,
             "scores": {
                 "story": brief.analysis.scores.story_score,
                 "case_study": brief.analysis.scores.case_study_score,
@@ -308,6 +317,11 @@ def print_result_summary(result):
 
     print(f"  Claims: {result.get('claims_count', 0)} | People: {result.get('people_count', 0)} | Sources: {result.get('sources_count', 0)}")
     print(f"  Signals: {result.get('signals_count', 0)} | Story Angles: {result.get('story_angles_count', 0)}")
+
+    cov = result.get("coverage")
+    if cov:
+        print(f"  Coverage: {cov['covered']}/{cov['total']}"
+              + (f" | nothing on: {', '.join(cov['gaps'])}" if cov["gaps"] else ""))
     print(f"  Duration: {result.get('duration_seconds', 0):.1f}s")
 
     found = result.get("findings_found", [])

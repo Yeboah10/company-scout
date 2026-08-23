@@ -38,6 +38,8 @@ from backend.services.apollo import (
     parse_person,
 )
 from backend.services.hunter import domain_search, is_configured, parse_domain_search
+from backend.services import monitoring
+from backend.services.usage import usage
 from backend.services.search import SearchService
 
 # Where organisations actually publish addresses.
@@ -267,9 +269,36 @@ class Prospector:
         names = [p.name for p in people if p.name]
         report = build_report(pages, domain, names)
 
-        # Hunter, when configured, is far more productive than reading public
-        # pages: most companies publish a contact form rather than an address.
-        hunter_emails, hunter_pattern = parse_domain_search(domain_search(domain))
+        # Hunter is far more productive than reading public pages — most
+        # companies publish a contact form rather than an address — but the
+        # free tier allows 25 lookups a month against a Gemini budget that
+        # permits roughly 90 scouts. Spent on every run it would be dry inside
+        # a week, and dry on exactly the runs that needed it.
+        #
+        # So it is held back for the runs that came up short. A confirmed
+        # address format is the outcome that makes it redundant: with one, an
+        # address can be built for every named person already.
+        hunter_emails: list[dict] = []
+        hunter_pattern = None
+        if is_configured():
+            if report.pattern:
+                print(
+                    f"       - Hunter not needed: {report.pattern}@{domain} "
+                    f"already confirmed from published addresses",
+                    flush=True,
+                )
+            elif usage.hunter_remaining() <= 0:
+                # Announced rather than silently degraded: a run that quietly
+                # skipped its best contact source looks identical to one where
+                # Hunter simply found nothing.
+                print("       ! Hunter monthly allowance spent — skipping lookup",
+                      flush=True)
+                monitoring.warn("Hunter allowance exhausted", domain=domain)
+            else:
+                hunter_emails, hunter_pattern = parse_domain_search(
+                    domain_search(domain)
+                )
+
         known = {f.email for f in report.found}
 
         # Apollo asks a different question — this named person's address,

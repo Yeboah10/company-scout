@@ -1325,3 +1325,48 @@ a.contact-email:hover { color: var(--accent); text-decoration: underline; }
     background: rgba(99, 102, 241, 0.15);
     color: var(--accent);
 }
+
+/* Coverage — a checklist of what the research asked about.
+   A gap is styled as absence rather than as an error: the row goes quiet
+   instead of red, because "nobody has written about their revenue" is
+   information, not a fault. */
+.coverage-headline {
+    color: var(--text-dim);
+    font-size: 0.92rem;
+    margin: 0 0 0.85rem;
+}
+
+.coverage-list {
+    display: grid;
+    gap: 2px;
+}
+
+.coverage-row {
+    display: grid;
+    grid-template-columns: 1.4rem 1fr auto;
+    align-items: baseline;
+    gap: 0.6rem;
+    padding: 0.45rem 0.6rem;
+    border-radius: 6px;
+    font-size: 0.92rem;
+}
+
+.coverage-row.gap {
+    background: rgba(107, 114, 128, 0.08);
+}
+
+.coverage-mark {
+    color: var(--green);
+    font-weight: 600;
+}
+
+.coverage-row.gap .coverage-mark,
+.coverage-row.gap .coverage-label {
+    color: var(--text-dim);
+}
+
+.coverage-detail {
+    color: var(--text-dim);
+    font-size: 0.85rem;
+    font-variant-numeric: tabular-nums;
+}

@@ -17,7 +17,7 @@ from backend.services.jobs import TOTAL_STAGES, JobStore
 from backend.services.llm import QuotaExhaustedError
 from backend.services import monitoring
 from backend.services.apollo import is_configured as apollo_configured
-from backend.services.hunter import is_configured as hunter_configured
+from backend.services import hunter
 from backend.services.report import brief_to_markdown
 from backend.services.usage import usage
 
@@ -284,7 +284,20 @@ async def usage_report(request: Request):
         "analyst": settings.llm_model_analyst,
         "scorer": settings.llm_model_scorer,
     }
-    snapshot["hunter"]["configured"] = hunter_configured()
+    # Ask Hunter directly rather than reporting our own guess. "Key is set"
+    # and "key works" are different facts, and only the second one is useful
+    # when a lookup silently returns nothing.
+    account = hunter.account()
+    snapshot["hunter"]["configured"] = account["configured"]
+    snapshot["hunter"]["valid"] = account.get("valid")
+    snapshot["hunter"]["reason"] = account.get("reason")
+    if account.get("valid") and account.get("limit"):
+        # Hunter counts searches this process never saw, so prefer its number.
+        snapshot["hunter"]["used"] = account["used"]
+        snapshot["hunter"]["limit"] = account["limit"]
+        snapshot["hunter"]["remaining"] = max(0, account["limit"] - account["used"])
+        snapshot["hunter"]["authoritative"] = True
+
     snapshot["apollo"]["configured"] = apollo_configured()
     return JSONResponse(content=snapshot)
 

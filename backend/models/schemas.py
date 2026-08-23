@@ -65,6 +65,50 @@ class SearchResult(BaseModel):
     snippet: str
     published_date: Optional[str] = None
     score: Optional[float] = None
+    # Which coverage areas asked for this page. Plural: the same result is
+    # often returned by several of the searches, and attributing it to only
+    # the first would make later areas look barren when they were not.
+    areas: list[str] = Field(default_factory=list)
+
+
+class AreaCoverage(BaseModel):
+    area: str
+    label: str
+    results: int = 0
+    claims: int = 0
+    covered: bool = False
+
+
+class CoverageReport(BaseModel):
+    """What the research set out to learn, and where it came back empty."""
+
+    areas: list[AreaCoverage] = Field(default_factory=list)
+
+    @computed_field
+    @property
+    def covered_count(self) -> int:
+        return sum(1 for a in self.areas if a.covered)
+
+    @computed_field
+    @property
+    def total_areas(self) -> int:
+        return len(self.areas)
+
+    @computed_field
+    @property
+    def score(self) -> float:
+        """Areas covered, out of ten. Not a quality judgment — a completeness
+        one. A brief can be thorough on six areas and still be missing the
+        three that would have changed your mind."""
+        if not self.areas:
+            return 0.0
+        return round(10 * self.covered_count / len(self.areas), 1)
+
+    @computed_field
+    @property
+    def gaps(self) -> list[str]:
+        """The areas nothing was learned about, in the reader's words."""
+        return [a.label for a in self.areas if not a.covered]
 
 
 class ResearchEvidence(BaseModel):
@@ -73,6 +117,9 @@ class ResearchEvidence(BaseModel):
     people: list[Person] = Field(default_factory=list)
     sources: list[Source] = Field(default_factory=list)
     raw_search_results: list[SearchResult] = Field(default_factory=list)
+    # Absent on briefs cached before coverage existed, so optional rather
+    # than defaulted to an empty report that would read as "nothing covered".
+    coverage: Optional[CoverageReport] = None
     researched_at: datetime = Field(default_factory=datetime.utcnow)
 
 
