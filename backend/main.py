@@ -293,6 +293,10 @@ async def usage_report(request: Request):
     snapshot["hunter"]["reason"] = account.get("reason")
     if account.get("valid") and account.get("limit"):
         # Hunter counts searches this process never saw, so prefer its number.
+        # Ours is kept alongside rather than overwritten: when the two differ,
+        # that difference is the only way to tell "Hunter was never called"
+        # from "Hunter was called and their count is stale".
+        snapshot["hunter"]["used_here"] = snapshot["hunter"]["used"]
         snapshot["hunter"]["used"] = account["used"]
         snapshot["hunter"]["limit"] = account["limit"]
         snapshot["hunter"]["remaining"] = max(0, account["limit"] - account["used"])

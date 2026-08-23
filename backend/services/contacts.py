@@ -46,6 +46,10 @@ _ROLE_LOCALS = {
     "info", "contact", "hello", "hi", "support", "help", "sales", "press",
     "media", "admin", "enquiries", "inquiries", "careers", "jobs", "team",
     "office", "general", "marketing", "partnerships", "business",
+    # Spiro publishes callcentre.ke@, callcentre.rw@ and callcentre.ug@ and
+    # all three were counted as a named person's address.
+    "callcentre", "callcenter", "communications", "comms", "pr", "news",
+    "reception", "frontdesk", "bookings", "orders", "shop", "store",
     # Compliance, legal and security inboxes. Kuda's dpo@ and fraud@ were
     # being counted as a named person's address, which inflated how reachable
     # the company looked.
@@ -92,6 +96,10 @@ class ContactReport:
     found: list[EmailFinding] = field(default_factory=list)
     pattern: str | None = None
     pattern_basis: list[str] = field(default_factory=list)
+    # Whether the pattern was confirmed against a person we know by name, or
+    # merely read off the shape of an address. Both are useful; conflating
+    # them would present a guess as an observation.
+    pattern_confirmed: bool = False
     inferred: list[dict] = field(default_factory=list)
     note: str = ""
 
@@ -116,6 +124,10 @@ def _plausible(email: str) -> bool:
         return False
     if domain.endswith(".png") or "@2x" in email:
         return False
+    # Spiro's contact page yielded `w@spironet.com`, which is markup bleeding
+    # into the match rather than an address anyone reads.
+    if len(local) < 2:
+        return False
     return True
 
 
@@ -132,10 +144,25 @@ def extract_emails(text: str, domain: str | None) -> list[EmailFinding]:
             continue
         if domain and not email.endswith(f"@{domain}"):
             continue
-        local = email.split("@", 1)[0]
-        kind = "role" if local in _ROLE_LOCALS else "personal"
-        out.setdefault(email, EmailFinding(email=email, kind=kind))
+        out.setdefault(email, EmailFinding(email=email, kind=classify(email)))
     return list(out.values())
+
+
+def classify(email: str) -> str:
+    """Whether an address reaches a person or a function.
+
+    The leading token decides it, not the whole local part: Spiro's
+    `callcentre.ke@`, `callcentre.rw@` and `callcentre.ug@` are one inbox
+    per country and every one of them was being read as a named person,
+    which is a direct inflation of how reachable the company looked.
+    """
+    local = email.split("@", 1)[0].lower()
+    if local in _ROLE_LOCALS:
+        return "role"
+    head = re.split(r"[._-]", local)[0]
+    if head in _ROLE_LOCALS:
+        return "role"
+    return "personal"
 
 
 def _tokens(name: str) -> tuple[str, str] | None:
@@ -145,7 +172,9 @@ def _tokens(name: str) -> tuple[str, str] | None:
     return parts[0].lower(), parts[-1].lower()
 
 
-def detect_pattern(findings: list[EmailFinding], people: list[str]) -> tuple[str | None, list[str]]:
+def detect_pattern(
+    findings: list[EmailFinding], people: list[str]
+) -> tuple[str | None, list[str], bool]:
     """Work out the company's address format from addresses actually observed.
 
     Only patterns confirmed against a known person's name are accepted. Without
@@ -155,7 +184,7 @@ def detect_pattern(findings: list[EmailFinding], people: list[str]) -> tuple[str
     """
     name_pairs = [t for t in (_tokens(p) for p in people) if t]
     if not name_pairs:
-        return None, []
+        return _pattern_from_shape(findings)
 
     candidates = {
         "{first}.{last}": lambda f, l: f"{f}.{l}",
@@ -176,13 +205,46 @@ def detect_pattern(findings: list[EmailFinding], people: list[str]) -> tuple[str
                 if finding.local == build(first, last):
                     scores.setdefault(label, []).append(finding.email)
 
-    if not scores:
-        return None, []
+    if scores:
+        # Most-corroborated pattern wins; ties break toward the more specific
+        # one (a bare {first} matches accidentally far more often than
+        # {first}.{last}).
+        best = max(scores.items(), key=lambda kv: (len(kv[1]), kv[0] != "{first}"))
+        return best[0], best[1], True
 
-    # Most-corroborated pattern wins; ties break toward the more specific one
-    # (a bare {first} matches accidentally far more often than {first}.{last}).
-    best = max(scores.items(), key=lambda kv: (len(kv[1]), kv[0] != "{first}"))
-    return best[0], best[1]
+    return _pattern_from_shape(findings)
+
+
+# Separators that a two-token address is actually built from.
+_SHAPES = {".": "{first}.{last}", "_": "{first}_{last}", "-": "{first}-{last}"}
+
+
+def _pattern_from_shape(findings: list[EmailFinding]) -> tuple[str | None, list[str], bool]:
+    """Read the format off an address whose owner we do not know by name.
+
+    Spiro publishes flora.limukii@spironet.com. Flora is not among the people
+    the research named, so the name check found nothing and no address was
+    offered for any of the three executives who were named — even though the
+    company's format was sitting there in plain sight.
+
+    Two alphabetic tokens either side of a separator is a strong enough shape
+    to extrapolate from. It is reported as a weaker basis than a confirmed
+    match, because that is what it is.
+    """
+    votes: dict[str, list[str]] = {}
+    for finding in findings:
+        if finding.kind != "personal":
+            continue
+        for sep, pattern in _SHAPES.items():
+            parts = finding.local.split(sep)
+            if len(parts) == 2 and all(p.isalpha() and len(p) > 1 for p in parts):
+                votes.setdefault(pattern, []).append(finding.email)
+                break
+
+    if not votes:
+        return None, [], False
+    best = max(votes.items(), key=lambda kv: len(kv[1]))
+    return best[0], best[1], False
 
 
 def apply_pattern(pattern: str, domain: str, person: str) -> str | None:
@@ -232,9 +294,10 @@ def build_report(
                 finding.person = person
                 break
 
-    pattern, basis = detect_pattern(report.found, people)
+    pattern, basis, confirmed = detect_pattern(report.found, people)
     report.pattern = pattern
     report.pattern_basis = basis
+    report.pattern_confirmed = confirmed
 
     if pattern and domain:
         covered = {f.person for f in report.found if f.person}
@@ -248,14 +311,21 @@ def build_report(
                         "person": person,
                         "email": guess,
                         "pattern": pattern,
-                        "basis": "observed at this company",
+                        "basis": (
+                            "observed at this company"
+                            if confirmed
+                            else "matches the shape of an address this company "
+                                 "publishes, but not confirmed against a known name"
+                        ),
                     }
                 )
 
     if report.found and report.inferred:
+        how = ("observed" if report.pattern_confirmed
+               else "apparent, unconfirmed")
         report.note = (
             f"{len(report.found)} address(es) published publicly. "
-            f"{len(report.inferred)} inferred from the observed "
+            f"{len(report.inferred)} inferred from the {how} "
             f"{pattern}@{domain} pattern — unverified."
         )
     elif report.found:

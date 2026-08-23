@@ -33,7 +33,15 @@ class SearchService:
             params["include_domains"] = include_domains
         # Wires and scraper directories are filtered at the source, not after,
         # because they otherwise consume a small results budget.
-        params["exclude_domains"] = exclude_domains or excluded_domains()
+        #
+        # Compared against None, not truthiness: an explicit empty list means
+        # "exclude nothing", and `or` sent it straight back to the default.
+        # LinkedIn is on that default list, so the LinkedIn profile finder —
+        # which passes [] precisely to switch the filter off — had been
+        # searching with LinkedIn excluded.
+        params["exclude_domains"] = (
+            excluded_domains() if exclude_domains is None else exclude_domains
+        )
 
         try:
             usage.record_tavily()
