@@ -44,13 +44,34 @@
     <div id="app">
         <!-- Header -->
         <header class="header">
-            <button
-                id="theme-toggle"
-                class="theme-toggle"
-                type="button"
-                title="Switch between light and dark"
-                aria-label="Switch between light and dark"
-            ></button>
+            <div class="header-actions">
+                <button
+                    id="options-toggle"
+                    class="options-toggle"
+                    type="button"
+                    title="Options"
+                    aria-label="Options"
+                    aria-haspopup="true"
+                    aria-expanded="false"
+                >&#9881;</button>
+                <div id="options-menu" class="options-menu hidden" role="menu">
+                    <a class="options-item" role="menuitem" href="/about">
+                        <span class="options-icon">&#9432;</span>
+                        <span>
+                            How it works
+                            <small>What it does, and what it won&rsquo;t tell you</small>
+                        </span>
+                    </a>
+                    <button class="options-item" role="menuitem" type="button" id="menu-theme">
+                        <span class="options-icon">&#9788;</span>
+                        <span id="menu-theme-label">Switch theme</span>
+                    </button>
+                    <button class="options-item" role="menuitem" type="button" id="changelog-toggle" aria-expanded="false">
+                        <span class="options-icon">&#9679;</span>
+                        <span>What&rsquo;s changed <small id="version-label">v0.0.0</small></span>
+                    </button>
+                </div>
+            </div>
             <h1 class="logo">Company Scout</h1>
             <p class="tagline">Find out whether a company is worth your time.</p>
         </header>
@@ -281,10 +302,6 @@
     <!-- Version / changelog -->
     <footer class="site-footer">
         <a class="footer-link" href="/about">How it works</a>
-        <button id="changelog-toggle" class="changelog-toggle" type="button" aria-expanded="false">
-            <span class="changelog-dot"></span>
-            <span id="version-label">v0.0.0</span>
-        </button>
     </footer>
 
     <div id="changelog-panel" class="changelog-panel hidden" role="dialog" aria-label="What's changed">
@@ -300,6 +317,7 @@
          and must run last. -->
     <script src="/static/js/core.js"></script>
     <script src="/static/js/theme.js"></script>
+    <script src="/static/js/menu.js"></script>
     <script src="/static/js/changelog-data.js"></script>
     <script src="/static/js/changelog.js"></script>
     <script src="/static/js/report.js"></script>

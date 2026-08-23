@@ -28,13 +28,34 @@
 <body>
     <div id="app">
         <header class="header">
-            <button
-                id="theme-toggle"
-                class="theme-toggle"
-                type="button"
-                title="Switch between light and dark"
-                aria-label="Switch between light and dark"
-            ></button>
+            <div class="header-actions">
+                <button
+                    id="options-toggle"
+                    class="options-toggle"
+                    type="button"
+                    title="Options"
+                    aria-label="Options"
+                    aria-haspopup="true"
+                    aria-expanded="false"
+                >&#9881;</button>
+                <div id="options-menu" class="options-menu hidden" role="menu">
+                    <a class="options-item" role="menuitem" href="/about">
+                        <span class="options-icon">&#9432;</span>
+                        <span>
+                            How it works
+                            <small>What it does, and what it won&rsquo;t tell you</small>
+                        </span>
+                    </a>
+                    <button class="options-item" role="menuitem" type="button" id="menu-theme">
+                        <span class="options-icon">&#9788;</span>
+                        <span id="menu-theme-label">Switch theme</span>
+                    </button>
+                    <a class="options-item" role="menuitem" href="/">
+                        <span class="options-icon">&#8592;</span>
+                        <span>Back to search</span>
+                    </a>
+                </div>
+            </div>
             <h1 class="logo">How Company Scout works</h1>
             <p class="tagline">What it does, what it will not do, and how to read it.</p>
         </header>
@@ -275,5 +296,6 @@
 
     <script src="/static/js/core.js"></script>
     <script src="/static/js/theme.js"></script>
+    <script src="/static/js/menu.js"></script>
 </body>
 </html>

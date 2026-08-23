@@ -4,66 +4,110 @@
     box-sizing: border-box;
 }
 
-/* Dark is the base palette. Light is applied either by the OS preference or
+/* Africa Business School, UM6P.
+   Two brand colours: ABS amber and UM6P red.
+
+     --brand-amber  #f2a007   the ABS wordmark
+     --brand-red    #d9472b   the UM6P blocks
+
+   Those two land exactly where a UI normally puts "warning" and "error", so
+   they are assigned deliberately rather than left to collide:
+
+     amber  = action. Links, buttons, focus, the active step. The thing you
+              click is always this colour and nothing else is.
+     red    = caution. Errors, an exhausted quota, a role that has ended.
+
+   Both come from the same brand, so caution reads as part of the design
+   rather than as an alarm bolted onto it. Green and blue stay for source
+   tiers, where they carry a meaning neither brand colour should claim.
+
+   Dark is the base palette. Light is applied either by the OS preference or
    by an explicit choice, which is stamped onto <html> as data-theme and wins
    over the OS in both directions. */
 :root {
-    --bg: #0f1117;
-    --bg-card: #1a1d27;
-    --bg-card-hover: #222633;
-    --border: #2a2e3a;
-    --text: #e4e4e7;
-    --text-muted: #9ca3af;
-    --text-dim: #6b7280;
-    --accent: #6366f1;
-    --accent-hover: #818cf8;
-    --green: #22c55e;
-    --yellow: #eab308;
-    --orange: #f97316;
-    --red: #ef4444;
-    --blue: #3b82f6;
-    --shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
-    --glow: rgba(99, 102, 241, 0.15);
+    --bg: #14100c;
+    --bg-card: #1f1a15;
+    --bg-card-hover: #292219;
+    --border: #383026;
+    --text: #f2ece4;
+    --text-muted: #b3a695;
+    --text-dim: #857a6c;
+
+    /* Brand, tuned for a dark ground. The amber is the logo value; the red is
+       lifted a little because #d9472b on near-black goes muddy. */
+    --brand-amber: #f2a007;
+    --brand-red: #e85a3a;
+
+    --accent: #f2a007;
+    --accent-hover: #ffb62e;
+    /* Filled buttons hover *lighter*. --accent-hover darkens in light mode,
+       which is right for a link and wrong under dark text. */
+    --brand-amber-hover: #ffb62e;
+    /* Text that sits ON the amber. Dark, because amber is a light colour and
+       white on it fails contrast at every size that matters. */
+    --on-accent: #1a1208;
+
+    --green: #4ade80;
+    --yellow: #f2a007;
+    --orange: #e85a3a;
+    --red: #e85a3a;
+    --blue: #60a5fa;
+    --shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
+    --glow: rgba(242, 160, 7, 0.14);
 }
 
 @media (prefers-color-scheme: light) {
     :root:not([data-theme="dark"]) {
-        --bg: #f7f8fa;
+        /* The logo amber fails contrast as text on white, so links and small
+           text use a darkened version of the same hue. Buttons keep the logo
+           value, where dark text on amber is comfortably readable. */
+        --brand-amber: #f2a007;
+        --brand-red: #d9472b;
+        --on-accent: #1a1208;
+        --bg: #faf7f2;
         --bg-card: #ffffff;
-        --bg-card-hover: #f1f3f7;
-        --border: #e1e4ea;
-        --text: #1a1d27;
-        --text-muted: #5b6472;
-        --text-dim: #8a94a3;
-        --accent: #4f46e5;
-        --accent-hover: #4338ca;
+        --bg-card-hover: #f5f0e8;
+        --border: #e7dfd2;
+        --text: #3a3d42;
+        --text-muted: #6b6459;
+        --text-dim: #938b7e;
+        --accent: #965e00;
+        --accent-hover: #7a4c00;
+        --brand-amber-hover: #d98c00;
         --green: #15803d;
-        --yellow: #a16207;
+        --yellow: #965e00;
         --orange: #c2410c;
-        --red: #dc2626;
+        --red: #c0392b;
         --blue: #1d4ed8;
-        --shadow: 0 1px 3px rgba(16, 24, 40, 0.08);
-        --glow: rgba(79, 70, 229, 0.10);
+        --shadow: 0 1px 3px rgba(58, 61, 66, 0.10);
+        --glow: rgba(242, 160, 7, 0.16);
     }
 }
 
 :root[data-theme="light"] {
-    --bg: #f7f8fa;
+    /* The logo amber fails contrast as text on white, so links and small
+       text use a darkened version of the same hue. Buttons keep the logo
+       value, where dark text on amber is comfortably readable. */
+    --brand-amber: #f2a007;
+    --brand-red: #d9472b;
+    --on-accent: #1a1208;
+    --bg: #faf7f2;
     --bg-card: #ffffff;
-    --bg-card-hover: #f1f3f7;
-    --border: #e1e4ea;
-    --text: #1a1d27;
-    --text-muted: #5b6472;
-    --text-dim: #8a94a3;
-    --accent: #4f46e5;
-    --accent-hover: #4338ca;
+    --bg-card-hover: #f5f0e8;
+    --border: #e7dfd2;
+    --text: #3a3d42;
+    --text-muted: #6b6459;
+    --text-dim: #938b7e;
+    --accent: #965e00;
+    --accent-hover: #7a4c00;
+    --brand-amber-hover: #d98c00;
     --green: #15803d;
-    --yellow: #a16207;
+    --yellow: #965e00;
     --orange: #c2410c;
-    --red: #dc2626;
+    --red: #c0392b;
     --blue: #1d4ed8;
-    --shadow: 0 1px 3px rgba(16, 24, 40, 0.08);
-    --glow: rgba(79, 70, 229, 0.10);
+    --shadow: 0 1px 3px rgba(58, 61, 66, 0.10);
+    --glow: rgba(242, 160, 7, 0.16);
 }
 
 body {
@@ -85,28 +129,6 @@ body {
     text-align: center;
     padding: 60px 0 30px;
     position: relative;
-}
-
-.theme-toggle {
-    position: absolute;
-    top: 20px;
-    right: 0;
-    width: 38px;
-    height: 38px;
-    font-size: 1.05rem;
-    line-height: 1;
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    color: var(--text-muted);
-    cursor: pointer;
-    transition: background 0.2s, border-color 0.2s, color 0.2s;
-}
-
-.theme-toggle:hover {
-    background: var(--bg-card-hover);
-    border-color: var(--accent);
-    color: var(--text);
 }
 
 /* Example chips */
@@ -220,8 +242,11 @@ body {
     padding: 14px 28px;
     font-size: 1rem;
     font-weight: 600;
-    background: var(--accent);
-    color: white;
+    /* The logo amber, not the darkened link shade: this is a filled button, so
+       the pairing that matters is dark text on brand amber. White on amber
+       fails contrast at any size. */
+    background: var(--brand-amber);
+    color: var(--on-accent);
     border: none;
     border-radius: 10px;
     cursor: pointer;
@@ -230,7 +255,7 @@ body {
 }
 
 .scout-btn:hover {
-    background: var(--accent-hover);
+    background: var(--brand-amber-hover);
 }
 
 .scout-btn:disabled {
@@ -282,7 +307,7 @@ body {
 
 .step.active {
     color: var(--accent);
-    background: rgba(99, 102, 241, 0.1);
+    background: var(--glow);
 }
 
 .step.done {
@@ -1322,7 +1347,7 @@ a.contact-email:hover { color: var(--accent); text-decoration: underline; }
 /* "Interesting but unreachable" is neither good news nor bad, so it gets its
    own colour rather than borrowing one that implies a verdict. */
 .score-badge.writing {
-    background: rgba(99, 102, 241, 0.15);
+    background: var(--glow);
     color: var(--accent);
 }
 
@@ -1382,14 +1407,14 @@ a.contact-email:hover { color: var(--accent); text-decoration: underline; }
 }
 
 .person-tenure.former {
-    color: var(--amber, #d97706);
+    color: var(--brand-red);
     font-weight: 500;
 }
 
 .contact-warning {
     margin-top: 6px;
     font-size: 0.82rem;
-    color: var(--amber, #d97706);
+    color: var(--brand-red);
 }
 
 .contact-observed {
@@ -1408,7 +1433,7 @@ a.contact-email:hover { color: var(--accent); text-decoration: underline; }
 }
 
 .capacity.empty {
-    color: var(--amber, #d97706);
+    color: var(--brand-red);
 }
 
 /* ---------- About page ----------
@@ -1529,4 +1554,102 @@ a.contact-email:hover { color: var(--accent); text-decoration: underline; }
     grid-column: 1 / -1;
     text-align: center;
     margin-top: 4px;
+}
+
+/* ---------- Options menu ----------
+   Replaces the lone theme glyph in the header. One affordance instead of a
+   row of icons, and "How it works" is reachable before you scroll rather than
+   only after you have read everything it explains. */
+.header-actions {
+    position: absolute;
+    top: 20px;
+    right: 0;
+    z-index: 40;
+}
+
+.options-toggle {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--bg-card);
+    color: var(--text-muted);
+    font-size: 1.05rem;
+    line-height: 1;
+    cursor: pointer;
+    transition: color 0.2s, border-color 0.2s, background 0.2s;
+}
+
+.options-toggle:hover,
+.options-toggle[aria-expanded="true"] {
+    color: var(--brand-amber);
+    border-color: var(--brand-amber);
+    background: var(--bg-card-hover);
+}
+
+.options-menu {
+    position: absolute;
+    top: 46px;
+    right: 0;
+    min-width: 236px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.28);
+    padding: 6px;
+    display: grid;
+    gap: 2px;
+    text-align: left;
+}
+
+.options-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    width: 100%;
+    padding: 9px 10px;
+    border: none;
+    background: none;
+    border-radius: 8px;
+    color: var(--text);
+    font: inherit;
+    font-size: 0.92rem;
+    text-align: left;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.options-item:hover {
+    background: var(--bg-card-hover);
+}
+
+.options-item small {
+    display: block;
+    color: var(--text-dim);
+    font-size: 0.78rem;
+    margin-top: 1px;
+}
+
+.options-icon {
+    color: var(--brand-amber);
+    line-height: 1.4;
+    flex-shrink: 0;
+}
+
+/* The logo's two colours, side by side, as the one piece of pure decoration
+   on the page. Enough to place the school without pasting a wordmark into a
+   product that is not the school's. */
+.header::after {
+    content: "";
+    display: block;
+    width: 54px;
+    height: 3px;
+    margin: 18px auto 0;
+    border-radius: 2px;
+    background: linear-gradient(
+        90deg,
+        var(--brand-red) 0 50%,
+        var(--brand-amber) 50% 100%
+    );
 }
