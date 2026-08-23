@@ -24,7 +24,10 @@ from datetime import datetime, timedelta, timezone
 # Free-tier ceilings, for showing headroom. Update if a plan changes.
 GEMINI_DAILY_PER_MODEL = 20
 TAVILY_MONTHLY = 1000
-HUNTER_MONTHLY = 25
+# A fallback only: /usage and the pipeline both prefer Hunter's own count.
+# This was 25 on the strength of their pricing page; the account reported
+# 50 the first time it was asked.
+HUNTER_MONTHLY = 50
 APOLLO_MONTHLY = 100
 
 # Where the durable copy of the counters lives.

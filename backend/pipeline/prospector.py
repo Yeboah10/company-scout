@@ -37,7 +37,12 @@ from backend.services.apollo import (
     is_configured as apollo_configured,
     parse_person,
 )
-from backend.services.hunter import domain_search, is_configured, parse_domain_search
+from backend.services.hunter import (
+    domain_search,
+    is_configured,
+    parse_domain_search,
+    remaining as hunter_remaining,
+)
 from backend.services import monitoring
 from backend.services.usage import usage
 from backend.services.search import SearchService
@@ -101,6 +106,12 @@ def _visible_text(html: str) -> str:
     mailtos = re.findall(r'mailto:([^"\'>\s?]+)', html, re.I)
     text = _MARKUP.sub(" ", _TAG.sub(" ", html))
     return text + " " + " ".join(mailtos)
+
+
+def _lookups_left() -> int:
+    """Hunter lookups still available, preferring Hunter's own figure."""
+    theirs = hunter_remaining()
+    return theirs if theirs is not None else usage.hunter_remaining()
 
 
 class Prospector:
@@ -287,7 +298,11 @@ class Prospector:
                     f"already confirmed from published addresses",
                     flush=True,
                 )
-            elif usage.hunter_remaining() <= 0:
+            # Hunter's own count when it can be had, ours only as a fallback:
+            # ours misses anything spent outside this process. Compared against
+            # None rather than truthiness — a real remaining balance of zero is
+            # exactly the case this guard exists for.
+            elif _lookups_left() <= 0:
                 # Announced rather than silently degraded: a run that quietly
                 # skipped its best contact source looks identical to one where
                 # Hunter simply found nothing.

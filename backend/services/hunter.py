@@ -82,6 +82,19 @@ def account(force: bool = False) -> dict:
     return out
 
 
+def remaining() -> int | None:
+    """Lookups left according to Hunter, or None if it could not be asked.
+
+    Preferred over any count kept here. The free allowance was assumed to be
+    25 and Hunter reported 50 the first time it was actually asked, which is
+    the general argument against hardcoding another service's limits.
+    """
+    a = account()
+    if a.get("valid") and a.get("limit") is not None and a.get("used") is not None:
+        return max(0, a["limit"] - a["used"])
+    return None
+
+
 def domain_search(domain: str, limit: int = 10) -> dict | None:
     """Addresses Hunter holds for a domain, plus the format it has inferred.
 
