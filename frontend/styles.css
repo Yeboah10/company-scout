@@ -35,8 +35,12 @@
    Light is the designed ground. Dark is applied by OS preference or by an
    explicit choice stamped on <html> as data-theme, which wins both ways. */
 :root {
-    --ground: #f3f2f2;
-    --surface: #eae9e9;
+    /* The ABS/UM6P logo sits on pure white, not a stylised warm grey — this
+       follows the mark itself rather than an invented paper tone. Surface
+       stays a faint warm-neutral so cards and hovers still separate from the
+       page without darkening the ground. */
+    --ground: #ffffff;
+    --surface: #f7f6f5;
     --raised: #ffffff;
 
     --ink: #201e1d;
@@ -2233,4 +2237,18 @@ body {
     .recent-card { grid-template-columns: 1fr auto auto; }
     .recent-card .recent-verdict,
     .recent-card .recent-open { display: none; }
+}
+
+/* Compact brand mark for pages that are not the homepage. Centered, small,
+   sits above the page's own title — the click target that gets you back
+   home from anywhere on the site. */
+.brand-compact {
+    justify-content: center;
+    margin-bottom: 18px;
+}
+
+.login-title-link {
+    display: block;
+    text-decoration: none;
+    color: inherit;
 }

@@ -28,6 +28,17 @@ def is_configured() -> bool:
     return bool(settings.database_url)
 
 
+def connect():
+    """A raw connection, for modules that need more than a health check.
+
+    Kept in one place so store.py, users.py and this module's own probe agree
+    on how to reach Postgres, rather than each carrying a slightly different
+    copy of the same six lines.
+    """
+    import psycopg
+    return psycopg.connect(settings.database_url, connect_timeout=10)
+
+
 def _probe() -> dict:
     if not is_configured():
         return {"configured": False, "connected": None, "reason": "no DATABASE_URL set"}
@@ -40,7 +51,7 @@ def _probe() -> dict:
 
     try:
         started = time.time()
-        with psycopg.connect(settings.database_url, connect_timeout=10) as conn:
+        with connect() as conn:
             with conn.cursor() as cur:
                 cur.execute("SELECT version()")
                 version = (cur.fetchone() or [""])[0]

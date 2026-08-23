@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sign in — Company Scout</title>
+    <title>Create an account — Company Scout</title>
     <meta name="robots" content="noindex">
     <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
     <link rel="stylesheet" href="/static/styles.css">
@@ -18,7 +18,6 @@
 </head>
 <body class="login-body">
     <main class="login-shell">
-        <!-- The identity block: the UM6P and ABS marks, then the product. -->
         <div class="login-brand">
             <span class="login-mark login-mark-red"></span>
             <span class="login-mark login-mark-amber"></span>
@@ -28,9 +27,9 @@
         <a href="/" class="login-title-link">
             <h1 class="login-title">Company<br>Scout</h1>
         </a>
-        <p class="login-kicker">Scout &rarr; Signal &rarr; Decide &rarr; Act</p>
+        <p class="login-kicker">Create an account</p>
 
-        <form class="login-form" method="post" action="/login">
+        <form class="login-form" method="post" action="/signup">
             <label class="login-label" for="email">Email</label>
             <input
                 class="login-input"
@@ -48,39 +47,38 @@
                 type="password"
                 id="password"
                 name="password"
-                autocomplete="current-password"
+                autocomplete="new-password"
+                minlength="8"
                 required
             >
 
             <input type="hidden" name="next" id="next-field" value="/">
 
-            <button class="login-submit" type="submit">Sign in</button>
+            <button class="login-submit" type="submit">Create account</button>
         </form>
 
         <p id="login-error" class="login-error hidden"></p>
 
         <p class="login-note">
-            New here? <a href="/signup">Create an account</a>.
+            Already have an account? <a href="/login">Sign in</a>.
         </p>
         <p class="login-note">
             Shared report links stay public &mdash; anyone with a
-            <code>/r/&hellip;</code> link can read that brief without signing in.
-            Signing in is for running new research and seeing what it costs.
+            <code>/r/&hellip;</code> link can read that brief without an account.
         </p>
     </main>
 
     <script>
-        // Carry the page the visitor was trying to reach through the form, and
-        // surface a failed attempt without leaving it in the address bar.
         (function () {
             var params = new URLSearchParams(window.location.search);
             var next = params.get('next');
             if (next && next.startsWith('/') && !next.startsWith('//')) {
                 document.getElementById('next-field').value = next;
             }
-            if (params.get('error')) {
+            var error = params.get('error');
+            if (error) {
                 var el = document.getElementById('login-error');
-                el.textContent = 'That email and password did not match. Try again.';
+                el.textContent = error;
                 el.classList.remove('hidden');
             }
         })();

@@ -97,6 +97,26 @@ def check_password(supplied: str) -> bool:
     return hmac.compare_digest(supplied, settings.auth_password)
 
 
+def authenticate(email: str, password: str) -> bool:
+    """Whether this email/password pair should be let in, by either route.
+
+    The single operator credential in the environment is checked first — it
+    has no database dependency, so it is the way in if Postgres is ever
+    unreachable. A registered account in the users table is checked second.
+    Either one is sufficient; neither is required for the other to work.
+    """
+    from backend.services import users
+
+    expected_email = settings.auth_email
+    email_ok = (not expected_email) or hmac.compare_digest(
+        email.strip().lower(), expected_email.strip().lower()
+    )
+    if email_ok and check_password(password):
+        return True
+
+    return users.verify(email, password)
+
+
 def current_user(request: Request) -> dict | None:
     return verify(request.cookies.get(COOKIE_NAME))
 

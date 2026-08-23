@@ -21,7 +21,7 @@ from backend.pipeline.researcher import InsufficientEvidenceError, ResearchPipel
 from backend.services.cache import BriefCache
 from backend.services.jobs import TOTAL_STAGES, JobStore
 from backend.services.llm import QuotaExhaustedError
-from backend.services import auth, db, monitoring, store
+from backend.services import auth, db, monitoring, store, users
 from backend.services.apollo import is_configured as apollo_configured
 from backend.services import hunter
 from backend.services.report import brief_to_markdown
@@ -49,7 +49,7 @@ executor = ThreadPoolExecutor(max_workers=2)
 # the one thing a reader is meant to do with one. The explainer page is public
 # for the same reason: it is how someone decides whether to ask for access.
 PUBLIC_PREFIXES = ("/static/", "/r/", "/report/")
-PUBLIC_PATHS = {"/login", "/logout", "/health", "/about", "/favicon.ico"}
+PUBLIC_PATHS = {"/login", "/signup", "/logout", "/health", "/about", "/favicon.ico"}
 
 
 @app.middleware("http")
@@ -366,11 +366,7 @@ async def login_submit(
     password: str = Form(""),
     next: str = Form("/"),
 ):
-    expected_email = settings.auth_email
-    email_ok = (not expected_email) or hmac.compare_digest(
-        email.strip().lower(), expected_email.strip().lower()
-    )
-    if not (email_ok and auth.check_password(password)):
+    if not auth.authenticate(email, password):
         # One message for both failures. Saying which half was wrong tells an
         # attacker whether the address exists.
         return RedirectResponse("/login?error=1", status_code=303)
@@ -382,6 +378,38 @@ async def login_submit(
     response.set_cookie(
         auth.COOKIE_NAME,
         auth.issue(email.strip().lower()),
+        max_age=auth.SESSION_MAX_AGE,
+        httponly=True,
+        samesite="lax",
+        secure=True,
+    )
+    return response
+
+
+@app.get("/signup")
+async def signup_page(request: Request):
+    if auth.is_signed_in(request):
+        return RedirectResponse("/", status_code=303)
+    return FileResponse(str(FRONTEND_DIR / "signup.html"))
+
+
+@app.post("/signup")
+async def signup_submit(
+    email: str = Form(""),
+    password: str = Form(""),
+    next: str = Form("/"),
+):
+    ok, message = users.create(email, password)
+    if not ok:
+        return RedirectResponse(f"/signup?error={quote(message)}", status_code=303)
+
+    # Registering signs you in immediately — a second form to fill in right
+    # after the first would be a worse experience than it is worth.
+    target = next if next.startswith("/") and not next.startswith("//") else "/"
+    response = RedirectResponse(target, status_code=303)
+    response.set_cookie(
+        auth.COOKIE_NAME,
+        auth.issue(users.normalise_email(email)),
         max_age=auth.SESSION_MAX_AGE,
         httponly=True,
         samesite="lax",

@@ -27,6 +27,7 @@ import threading
 from backend.config import settings
 from backend.models.schemas import CompanyBrief
 from backend.services import monitoring
+from backend.services.db import connect as _connect
 
 _lock = threading.Lock()
 _ready = False
@@ -82,11 +83,6 @@ CREATE INDEX IF NOT EXISTS scout_runs_time_idx ON scout_runs (created_at DESC);
 #   the indexes      Reading a shared link always arrives by key; the recent
 #                    list and any future "compare with last time" both want
 #                    the latest run per company.
-
-
-def _connect():
-    import psycopg
-    return psycopg.connect(settings.database_url, connect_timeout=10)
 
 
 def is_enabled() -> bool:
