@@ -25,6 +25,7 @@ from datetime import datetime, timedelta, timezone
 GEMINI_DAILY_PER_MODEL = 20
 TAVILY_MONTHLY = 1000
 HUNTER_MONTHLY = 25
+APOLLO_MONTHLY = 100
 
 # Where the durable copy of the counters lives.
 _STORE_KEY = "usage-counters"
@@ -74,6 +75,7 @@ class _Counters:
     month: str = field(default_factory=_month)
     tavily: int = 0
     hunter: int = 0
+    apollo: int = 0
 
 
 class UsageTracker:
@@ -94,6 +96,7 @@ class UsageTracker:
             self._c.month = month
             self._c.tavily = 0
             self._c.hunter = 0
+            self._c.apollo = 0
 
     # Set by the app once the cache is available. Counters are useless without
     # it: Render restarts the service on every deploy and after each idle
@@ -128,6 +131,7 @@ class UsageTracker:
                     "month": self._c.month,
                     "tavily": self._c.tavily,
                     "hunter": self._c.hunter,
+                    "apollo": self._c.apollo,
                 }
             )
             # Two days: long enough to survive a restart and the day boundary,
@@ -163,6 +167,12 @@ class UsageTracker:
         with self._lock:
             self._roll()
             self._c.hunter += n
+            self._persist()
+
+    def record_apollo(self, n: int = 1) -> None:
+        with self._lock:
+            self._roll()
+            self._c.apollo += n
             self._persist()
 
     def snapshot(self, models: list[str]) -> dict:
@@ -207,6 +217,12 @@ class UsageTracker:
                     "remaining": max(0, HUNTER_MONTHLY - self._c.hunter),
                     "resets_in_seconds": seconds_until_month_reset(),
                 },
+                "apollo": {
+                    "used": self._c.apollo,
+                    "limit": APOLLO_MONTHLY,
+                    "remaining": max(0, APOLLO_MONTHLY - self._c.apollo),
+                    "resets_in_seconds": seconds_until_month_reset(),
+                },
                 "durable": self._store is not None,
             }
 
@@ -220,6 +236,7 @@ class UsageTracker:
                     "month": self._c.month,
                     "tavily": self._c.tavily,
                     "hunter": self._c.hunter,
+                    "apollo": self._c.apollo,
                 }
             )
 
@@ -237,6 +254,7 @@ class UsageTracker:
             self._c.month = d.get("month", _month())
             self._c.tavily = int(d.get("tavily", 0))
             self._c.hunter = int(d.get("hunter", 0))
+            self._c.apollo = int(d.get("apollo", 0))
             self._roll()
 
 

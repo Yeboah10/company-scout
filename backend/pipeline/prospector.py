@@ -32,6 +32,11 @@ from backend.services.contacts import (
     build_report,
     company_domain,
 )
+from backend.services.apollo import (
+    find_person_email,
+    is_configured as apollo_configured,
+    parse_person,
+)
 from backend.services.hunter import domain_search, is_configured, parse_domain_search
 from backend.services.search import SearchService
 
@@ -266,6 +271,31 @@ class Prospector:
         # pages: most companies publish a contact form rather than an address.
         hunter_emails, hunter_pattern = parse_domain_search(domain_search(domain))
         known = {f.email for f in report.found}
+
+        # Apollo asks a different question — this named person's address,
+        # rather than what exists at this domain — so it finds people Hunter
+        # misses and is worth running alongside rather than instead.
+        if apollo_configured():
+            for person in people[:5]:  # each lookup costs a credit
+                if person.name in {f.person for f in report.found if f.person}:
+                    continue
+                parts = [p for p in person.name.split() if len(p) > 1]
+                if len(parts) < 2:
+                    continue
+                found = parse_person(
+                    find_person_email(parts[0], parts[-1], domain)
+                )
+                if found and found["email"] not in known:
+                    known.add(found["email"])
+                    report.found.append(
+                        EmailFinding(
+                            email=found["email"],
+                            kind=found["kind"],
+                            source_url=found["source_url"],
+                            person=found["person"] or person.name,
+                        )
+                    )
+
         for e in hunter_emails:
             if e["email"] in known:
                 continue

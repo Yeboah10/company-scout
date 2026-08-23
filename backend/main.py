@@ -15,6 +15,7 @@ from backend.services.cache import BriefCache
 from backend.services.jobs import TOTAL_STAGES, JobStore
 from backend.services.llm import QuotaExhaustedError
 from backend.services import monitoring
+from backend.services.apollo import is_configured as apollo_configured
 from backend.services.hunter import is_configured as hunter_configured
 from backend.services.report import brief_to_markdown
 from backend.services.usage import usage
@@ -260,6 +261,7 @@ async def usage_report():
         "scorer": settings.llm_model_scorer,
     }
     snapshot["hunter"]["configured"] = hunter_configured()
+    snapshot["apollo"]["configured"] = apollo_configured()
     return JSONResponse(content=snapshot)
 
 

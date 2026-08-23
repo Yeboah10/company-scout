@@ -95,7 +95,16 @@ async function loadUsage() {
         </div>
 
         <div class="section">
-            <h3>Hunter — email lookup</h3>
+            <h3>Apollo — email lookup by person</h3>
+            ${data.apollo && data.apollo.configured
+                ? meter('Lookups this month', data.apollo.used, data.apollo.limit,
+                        data.apollo.remaining,
+                        `${data.apollo.remaining} left · resets in ${humaniseDuration(data.apollo.resets_in_seconds)}`)
+                : '<p class="section-subtitle">Not configured. Set APOLLO_API_KEY to enable.</p>'}
+        </div>
+
+        <div class="section">
+            <h3>Hunter — email lookup by domain</h3>
             ${data.hunter.configured
                 ? meter('Lookups this month', data.hunter.used, data.hunter.limit,
                         data.hunter.remaining,

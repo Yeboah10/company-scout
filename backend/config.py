@@ -47,6 +47,11 @@ class Settings(BaseSettings):
     # because most companies now publish a contact form instead of an address.
     hunter_api_key: str = ""
 
+    # Optional. Person-first email lookup: given a named executive and a
+    # company domain, returns their address. Free plan allows this only from
+    # an account registered with a work email address.
+    apollo_api_key: str = ""
+
     # Error reporting. Off unless a DSN is set.
     sentry_dsn: str = ""
     sentry_environment: str = "production"
