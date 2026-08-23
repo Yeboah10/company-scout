@@ -13,6 +13,7 @@ Usage:
 
 import argparse
 import json
+import re
 import os
 import sys
 import time
@@ -50,6 +51,42 @@ def load_companies(ids=None, category=None):
         companies = [c for c in companies if c["category"] == category.upper()]
 
     return companies
+
+
+_STOPWORDS = {
+    "or", "and", "the", "of", "a", "an", "in", "to", "for", "with", "on",
+    "attempts", "major", "issues", "problems",
+}
+
+
+def _match_findings(expected_items, text):
+    """Approximate check that an expected fact turned up in the evidence.
+
+    The original required every word of the expected phrase to appear
+    literally, which measured almost nothing: Twiga's evidence said "cut over
+    300 jobs as part of a major restructuring", and "layoffs" was scored as
+    MISSED. That produced a hit rate that looked like an extraction weakness
+    and was mostly a matching artefact.
+
+    Now a phrase counts as found when any of its distinctive words appears.
+    Still crude -- it cannot see that "job cuts" means "layoffs" -- so the
+    report labels the number approximate and prints both lists for a human to
+    judge. A precise-looking percentage from a crude matcher is worse than an
+    admittedly rough one.
+    """
+    found, missed = [], []
+    for expected in expected_items:
+        words = [
+            w for w in re.findall(r"[a-z0-9]+", expected.lower())
+            if len(w) > 3 and w not in _STOPWORDS
+        ]
+        if not words:
+            words = [expected.lower()]
+        if any(w in text for w in words):
+            found.append(expected)
+        else:
+            missed.append(expected)
+    return found, missed
 
 
 def run_company(company, pipeline):
@@ -95,14 +132,9 @@ def run_company(company, pipeline):
         all_summary = (brief.analysis.executive_summary or "").lower()
         combined_text = all_claims_text + " " + all_summary
 
-        found = []
-        missed = []
-        for expected in company["expected"]["should_find"]:
-            keywords = expected.lower().split()
-            if all(kw in combined_text for kw in keywords):
-                found.append(expected)
-            else:
-                missed.append(expected)
+        found, missed = _match_findings(
+            company["expected"]["should_find"], combined_text
+        )
 
         result["findings_found"] = found
         result["findings_missed"] = missed
