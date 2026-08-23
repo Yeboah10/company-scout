@@ -158,7 +158,8 @@ def _match_findings(expected_items, text):
 def run_company(company, pipeline, judge_llm):
     print(f"\n{'#'*70}")
     print(f"  [{company['id']}/{company['category']}] {company['name']} ({company['country']})")
-    print(f"  Expected score range: {company['expected']['expected_score_range']}")
+    print(f"  Expected: attention {company['expected']['expected_interest_range']}"
+          f" | reach {company['expected']['expected_reachability_range']}")
     print(f"{'#'*70}\n")
 
     try:
@@ -195,7 +196,12 @@ def run_company(company, pipeline, judge_llm):
                 "overall": brief.analysis.scores.overall_score,
                 "recommendation": brief.analysis.scores.recommendation,
             } if brief.analysis.scores else None,
-            "expected_score_range": company["expected"]["expected_score_range"],
+            "expected_interest_range": company["expected"]["expected_interest_range"],
+            "expected_reachability_range": company["expected"]["expected_reachability_range"],
+            "expectation_basis": company["expected"].get("basis"),
+            "interest_score": brief.interest_score,
+            "reachability_score": brief.reachability_score,
+            "verdict": brief.verdict,
             "expected_findings": company["expected"]["should_find"],
             "brief": brief.model_dump(mode="json"),
         }
@@ -220,14 +226,24 @@ def run_company(company, pipeline, judge_llm):
             else 1.0
         )
 
-        # Check if score is in expected range
-        if result["scores"]:
-            score_range = company["expected"]["expected_score_range"]
-            low, high = map(float, score_range.split("-"))
-            actual = result["scores"]["overall"]
-            result["score_in_range"] = low <= actual <= high
-        else:
-            result["score_in_range"] = False
+        # Both scores are checked, because they answer different questions and
+        # a company can legitimately be far apart on them. Judging a collapsed
+        # company against one blended number is what made category C look like
+        # a failure when the tool was right.
+        def _in(range_str, value):
+            low, high = map(float, range_str.split("-"))
+            return low <= value <= high
+
+        result["interest_in_range"] = _in(
+            company["expected"]["expected_interest_range"], brief.interest_score
+        )
+        result["reach_in_range"] = _in(
+            company["expected"]["expected_reachability_range"],
+            brief.reachability_score,
+        )
+        result["score_in_range"] = (
+            result["interest_in_range"] and result["reach_in_range"]
+        )
 
         return result
 
@@ -312,8 +328,14 @@ def print_result_summary(result):
     scores = result.get("scores", {})
     if scores:
         print(f"  Overall Score:  {scores['overall']}/10 ({scores['recommendation']})")
-        print(f"  Expected Range: {result['expected_score_range']}")
-        print(f"  In Range:       {'YES' if result.get('score_in_range') else 'NO'}")
+    if result.get("interest_score") is not None:
+        print(f"  Attention:      {result['interest_score']}/10 "
+              f"(expected {result['expected_interest_range']}) "
+              f"{'OK' if result.get('interest_in_range') else 'OUT'}")
+        print(f"  Reach:          {result['reachability_score']}/10 "
+              f"(expected {result['expected_reachability_range']}) "
+              f"{'OK' if result.get('reach_in_range') else 'OUT'}")
+        print(f"  Verdict:        {result.get('verdict')}")
 
     print(f"  Claims: {result.get('claims_count', 0)} | People: {result.get('people_count', 0)} | Sources: {result.get('sources_count', 0)}")
     print(f"  Signals: {result.get('signals_count', 0)} | Story Angles: {result.get('story_angles_count', 0)}")
@@ -369,8 +391,10 @@ def print_report():
             continue
 
         scores = r.get("scores", {})
-        overall = scores.get("overall", "N/A") if scores else "N/A"
-        expected = r.get("expected_score_range", "?")
+        overall = (f"{r.get('interest_score')}/{r.get('reachability_score')}"
+                   if r.get("interest_score") is not None else "N/A")
+        expected = (f"{r.get('expected_interest_range','?')} "
+                    f"{r.get('expected_reachability_range','?')}")
         in_range = "YES" if r.get("score_in_range") else "NO"
         hit_rate = r.get("findings_hit_rate", 0)
         duration = r.get("duration_seconds", 0)

@@ -1,5 +1,5 @@
 {
-  "description": "Company Scout evaluation set — 20 companies across 5 categories",
+  "description": "Company Scout evaluation set — 20 companies across 5 categories\n\nExpectations are two ranges, not one. A company can be very much worth writing about and completely impossible to reach — 54gene scored 8.5 and 1.0 — and a single number cannot hold both. Documenting how a company failed is a legitimate case study, so a collapse raises the interest expectation and lowers the reachability one.\n\nEach expectation records whether it was written before or after the run. The category C four were revised after the fact, which makes them weaker evidence than the sixteen written blind — worth knowing when reading the final scoreboard.",
   "categories": {
     "A": "Obviously interesting — should score HIGH PRIORITY (8+)",
     "B": "Moderately interesting — should score WORTH A LOOK (6-7.9)",
@@ -16,9 +16,17 @@
       "country": "UAE/West Africa",
       "industry": "Electric vehicles",
       "expected": {
-        "should_find": ["Equitane backing", "$100M+ funding", "6 African countries", "battery swapping", "leadership change 2026"],
-        "expected_score_range": "8-10",
-        "notes": "Well-funded, high-profile. Lots of coverage."
+        "should_find": [
+          "Equitane backing",
+          "$100M+ funding",
+          "6 African countries",
+          "battery swapping",
+          "leadership change 2026"
+        ],
+        "notes": "Well funded, high profile, lots of coverage. Should be an easy yes on both.",
+        "expected_interest_range": "8-10",
+        "expected_reachability_range": "6-9",
+        "basis": "written before the run"
       }
     },
     {
@@ -29,9 +37,17 @@
       "country": "Kenya",
       "industry": "Electric vehicles",
       "expected": {
-        "should_find": ["pay-as-you-drive model", "$42M funding", "Africa50 investor", "100+ buses", "Rwanda expansion"],
-        "expected_score_range": "7-9",
-        "notes": "Strong coverage, clear story angles."
+        "should_find": [
+          "pay-as-you-drive model",
+          "$42M funding",
+          "Africa50 investor",
+          "100+ buses",
+          "Rwanda expansion"
+        ],
+        "notes": "Strong coverage, clear story angles, active company.",
+        "expected_interest_range": "7-9",
+        "expected_reachability_range": "6-9",
+        "basis": "written before the run"
       }
     },
     {
@@ -42,9 +58,16 @@
       "country": "Nigeria",
       "industry": "Fintech",
       "expected": {
-        "should_find": ["unicorn valuation", "regulatory issues", "multiple African markets", "Olugbenga Agboola founder"],
-        "expected_score_range": "7-9",
-        "notes": "Major African fintech. System should pick up both positive news and controversies."
+        "should_find": [
+          "unicorn valuation",
+          "regulatory issues",
+          "multiple African markets",
+          "Olugbenga Agboola founder"
+        ],
+        "notes": "Major fintech with real controversies. Interesting either way; reaching a named person at that size is harder.",
+        "expected_interest_range": "7-10",
+        "expected_reachability_range": "4-8",
+        "basis": "written before the run"
       }
     },
     {
@@ -55,9 +78,16 @@
       "country": "Nigeria/USA",
       "industry": "Talent/HR Tech",
       "expected": {
-        "should_find": ["pivot from training to marketplace", "layoffs", "Series E funding", "global expansion"],
-        "expected_score_range": "6-8",
-        "notes": "Interesting for the pivot story. Mixed recent signals."
+        "should_find": [
+          "pivot from training to marketplace",
+          "layoffs",
+          "Series E funding",
+          "global expansion"
+        ],
+        "notes": "The pivot and the layoffs are the story. Both are interesting, per the editorial stance.",
+        "expected_interest_range": "6-9",
+        "expected_reachability_range": "5-8",
+        "basis": "written before the run"
       }
     },
     {
@@ -68,9 +98,16 @@
       "country": "Nigeria",
       "industry": "Agritech/Food processing",
       "expected": {
-        "should_find": ["palm oil processing", "Kraken machine", "smallholder farmers", "Series A funding"],
-        "expected_score_range": "7-9",
-        "notes": "Hardware + agriculture. Strong case study potential."
+        "should_find": [
+          "palm oil processing",
+          "Kraken machine",
+          "smallholder farmers",
+          "Series A funding"
+        ],
+        "notes": "Hardware plus agriculture. Smaller company, so contacts are usually easier to find.",
+        "expected_interest_range": "7-9",
+        "expected_reachability_range": "6-9",
+        "basis": "written before the run"
       }
     },
     {
@@ -81,9 +118,15 @@
       "country": "Nigeria",
       "industry": "Fintech",
       "expected": {
-        "should_find": ["agent banking", "profitability claims", "large transaction volumes"],
-        "expected_score_range": "6-8",
-        "notes": "Profitable fintech — interesting but well-covered territory."
+        "should_find": [
+          "agent banking",
+          "profitability claims",
+          "large transaction volumes"
+        ],
+        "notes": "Profitable fintech. Well covered but genuinely doing something.",
+        "expected_interest_range": "6-9",
+        "expected_reachability_range": "6-9",
+        "basis": "written before the run"
       }
     },
     {
@@ -94,9 +137,16 @@
       "country": "Kenya",
       "industry": "E-commerce/Logistics",
       "expected": {
-        "should_find": ["merger with MaxAB", "B2B distribution", "funding history", "operational challenges"],
-        "expected_score_range": "5-7",
-        "notes": "Merger story is interesting. Some struggles. Mixed signals."
+        "should_find": [
+          "merger with MaxAB",
+          "B2B distribution",
+          "funding history",
+          "operational challenges"
+        ],
+        "notes": "The MaxAB merger is a strong story. Reachability depends on who survived it.",
+        "expected_interest_range": "6-9",
+        "expected_reachability_range": "4-8",
+        "basis": "written before the run"
       }
     },
     {
@@ -107,9 +157,15 @@
       "country": "South Africa",
       "industry": "Digital banking",
       "expected": {
-        "should_find": ["profitability milestone", "customer numbers", "expansion to Southeast Asia"],
-        "expected_score_range": "6-8",
-        "notes": "One of few profitable African neobanks."
+        "should_find": [
+          "profitability milestone",
+          "customer numbers",
+          "expansion to Southeast Asia"
+        ],
+        "notes": "One of few profitable African neobanks. Large and South African — expect gatekeeping.",
+        "expected_interest_range": "6-9",
+        "expected_reachability_range": "4-8",
+        "basis": "written before the run"
       }
     },
     {
@@ -120,9 +176,16 @@
       "country": "Kenya",
       "industry": "E-commerce",
       "expected": {
-        "should_find": ["last-mile delivery", "rural commerce", "funding rounds", "Uganda expansion"],
-        "expected_score_range": "5-7",
-        "notes": "Interesting model but unclear trajectory."
+        "should_find": [
+          "last-mile delivery",
+          "rural commerce",
+          "funding rounds",
+          "Uganda expansion"
+        ],
+        "notes": "Interesting model, and if it has collapsed the collapse is the story. Reachability should fall hard if it is no longer trading.",
+        "expected_interest_range": "6-9",
+        "expected_reachability_range": "1-6",
+        "basis": "written before the run"
       }
     },
     {
@@ -133,9 +196,15 @@
       "country": "Kenya",
       "industry": "Electric vehicles",
       "expected": {
-        "should_find": ["electric motorcycles", "electric buses", "local manufacturing"],
-        "expected_score_range": "6-8",
-        "notes": "Direct competitor to Spiro/BasiGo. Good comparison case."
+        "should_find": [
+          "electric motorcycles",
+          "electric buses",
+          "local manufacturing"
+        ],
+        "notes": "Direct competitor to Spiro and BasiGo. Useful as a comparison case.",
+        "expected_interest_range": "6-8",
+        "expected_reachability_range": "6-9",
+        "basis": "written before the run"
       }
     },
     {
@@ -146,9 +215,15 @@
       "country": "Kenya",
       "industry": "Insurtech/Agritech",
       "expected": {
-        "should_find": ["parametric insurance", "smallholder farmers", "satellite data"],
-        "expected_score_range": "4-6",
-        "notes": "Niche. Interesting tech but limited story breadth."
+        "should_find": [
+          "parametric insurance",
+          "smallholder farmers",
+          "satellite data"
+        ],
+        "notes": "Niche but technically interesting. REVISED after seeing the run.",
+        "expected_interest_range": "5-8",
+        "expected_reachability_range": "5-8",
+        "basis": "revised after seeing the result"
       }
     },
     {
@@ -159,9 +234,15 @@
       "country": "Nigeria",
       "industry": "Healthtech/Genomics",
       "expected": {
-        "should_find": ["shutdown or major restructuring", "African genomics data", "controversy"],
-        "expected_score_range": "3-5",
-        "notes": "Company had major problems. System should flag this as cautionary, not opportunity."
+        "should_find": [
+          "shutdown or major restructuring",
+          "African genomics data",
+          "controversy"
+        ],
+        "notes": "Collapse is worth writing about; there is nobody left to contact. REVISED after seeing the run.",
+        "expected_interest_range": "7-10",
+        "expected_reachability_range": "0-2",
+        "basis": "revised after seeing the result"
       }
     },
     {
@@ -172,9 +253,16 @@
       "country": "Kenya",
       "industry": "Agritech/Logistics",
       "expected": {
-        "should_find": ["B2B food distribution", "financial difficulties", "layoffs", "pivot attempts"],
-        "expected_score_range": "3-5",
-        "notes": "Was once promising but struggled. System should not score it as interesting."
+        "should_find": [
+          "B2B food distribution",
+          "financial difficulties",
+          "layoffs",
+          "pivot attempts"
+        ],
+        "notes": "Struggled publicly, which is a case study rather than a disqualification. REVISED after seeing the run.",
+        "expected_interest_range": "6-9",
+        "expected_reachability_range": "4-8",
+        "basis": "revised after seeing the result"
       }
     },
     {
@@ -185,9 +273,15 @@
       "country": "Nigeria",
       "industry": "Fintech",
       "expected": {
-        "should_find": ["digital banking", "funding rounds", "regulatory challenges"],
-        "expected_score_range": "4-6",
-        "notes": "Decent company but many similar neobank stories already told."
+        "should_find": [
+          "digital banking",
+          "funding rounds",
+          "regulatory challenges"
+        ],
+        "notes": "Well covered, still trading, publishes addresses. REVISED after seeing the run.",
+        "expected_interest_range": "7-10",
+        "expected_reachability_range": "6-9",
+        "basis": "revised after seeing the result"
       }
     },
     {
@@ -199,8 +293,10 @@
       "industry": "Impact investing",
       "expected": {
         "should_find": [],
-        "expected_score_range": "2-5",
-        "notes": "Small fund. Very little public information. System should flag low confidence."
+        "notes": "Small fund, very little public record. The tool should say so rather than pad.",
+        "expected_interest_range": "2-6",
+        "expected_reachability_range": "2-6",
+        "basis": "written before the run"
       }
     },
     {
@@ -211,9 +307,14 @@
       "country": "Nigeria",
       "industry": "Transport",
       "expected": {
-        "should_find": ["shared bus service", "Lagos operations"],
-        "expected_score_range": "3-6",
-        "notes": "Limited coverage. System should say what it couldn't find."
+        "should_find": [
+          "shared bus service",
+          "Lagos operations"
+        ],
+        "notes": "Limited coverage. Should state what it could not find.",
+        "expected_interest_range": "4-7",
+        "expected_reachability_range": "3-7",
+        "basis": "written before the run"
       }
     },
     {
@@ -224,9 +325,14 @@
       "country": "Nigeria",
       "industry": "B2B Commerce",
       "expected": {
-        "should_find": ["trade enablement", "informal retailers"],
-        "expected_score_range": "4-6",
-        "notes": "Some coverage but sparse detail on operations."
+        "should_find": [
+          "trade enablement",
+          "informal retailers"
+        ],
+        "notes": "Some coverage, sparse operational detail.",
+        "expected_interest_range": "5-8",
+        "expected_reachability_range": "4-8",
+        "basis": "written before the run"
       }
     },
     {
@@ -237,9 +343,15 @@
       "country": "Nigeria",
       "industry": "Mobility/Logistics",
       "expected": {
-        "should_find": ["motorcycle logistics", "EV pivot", "multiple name changes"],
-        "expected_score_range": "5-7",
-        "notes": "Name confusion risk (MAX vs other companies). System should resolve correctly."
+        "should_find": [
+          "motorcycle logistics",
+          "EV pivot",
+          "multiple name changes"
+        ],
+        "notes": "Name confusion risk. Resolution is the thing being tested here.",
+        "expected_interest_range": "5-8",
+        "expected_reachability_range": "5-8",
+        "basis": "written before the run"
       }
     },
     {
@@ -250,9 +362,16 @@
       "country": "Nigeria/Germany",
       "industry": "E-commerce",
       "expected": {
-        "should_find": ["public company NYSE", "profitability struggles", "market exits", "Zinnov fraud allegations history"],
-        "expected_score_range": "5-7",
-        "notes": "Public company with contradictory narratives. Lots of info but mixed signals."
+        "should_find": [
+          "public company NYSE",
+          "profitability struggles",
+          "market exits",
+          "Zinnov fraud allegations history"
+        ],
+        "notes": "Public company, contradictory narratives, plenty to write about. Investor relations is a route, a person is not.",
+        "expected_interest_range": "6-9",
+        "expected_reachability_range": "3-7",
+        "basis": "written before the run"
       }
     },
     {
@@ -263,9 +382,14 @@
       "country": "Kenya",
       "industry": "Agritech",
       "expected": {
-        "should_find": ["agri-input distribution", "rural supply chain"],
-        "expected_score_range": "3-6",
-        "notes": "Company may have pivoted or gone quiet. System should flag uncertainty."
+        "should_find": [
+          "agri-input distribution",
+          "rural supply chain"
+        ],
+        "notes": "May have pivoted or gone quiet. If it has wound down, reachability should collapse and attention need not.",
+        "expected_interest_range": "4-8",
+        "expected_reachability_range": "0-4",
+        "basis": "written before the run"
       }
     }
   ]
