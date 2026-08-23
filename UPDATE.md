@@ -2,7 +2,8 @@
 
 **Live:** https://scout.yeboah.works
 **Repo:** github.com/Yeboah10/company-scout
-**Covers:** everything after `STATUS.md` (23 August 2026), eight commits
+**Covers:** everything after `STATUS.md` (23 August 2026) — twelve commits
+**Written:** 23 August 2026
 
 This is a delta, not a replacement. `STATUS.md` still describes what the tool
 is, the stack, and the architecture; nothing there has been invalidated.
@@ -13,10 +14,10 @@ is, the stack, and the architecture; nothing there has been invalidated.
 
 **The problem.** The tool produced a single 0–10 "Scout Score" that tried to
 answer two questions at once: *is this company interesting?* and *can I
-actually reach anyone there?* Those questions pull in opposite directions.
-54gene — an African genomics startup that collapsed, with a CEO resignation
-and a court injunction — is a genuinely good story and an impossible contact.
-A blended number has to lie about one of them.
+actually reach anyone there?* Those pull in opposite directions. 54gene — an
+African genomics startup that collapsed, with a CEO resignation and a court
+injunction — is a genuinely good story and an impossible contact. A blended
+number has to lie about one of them.
 
 **The fix.** `CompanyBrief` now exposes two computed scores and a verdict:
 
@@ -29,15 +30,14 @@ when `operational_status` is `defunct` or `winding_down`, then scaled by the
 best contact route found: a named person's published address counts fully, a
 role inbox 0.8, a LinkedIn profile 0.6, an inferred address 0.4, nothing 0.15.
 
-**Why it matters.** 54gene now reads 8.5 attention / 1.0 reach, which is the
-answer a human would give.
+54gene now reads **8.5 attention / 1.0 reach**, which is the answer a human
+would give.
 
 ---
 
-## 2. Contact discovery is real, with the guesswork labelled
+## 2. Contact discovery, with the guesswork labelled
 
-Three tiers, and the distinction is enforced in the schema rather than in
-prose:
+Three tiers, enforced in the schema rather than in prose:
 
 | Tier | Meaning |
 |---|---|
@@ -45,24 +45,17 @@ prose:
 | **Inferred** | Built from an address format actually observed at this company |
 | **Candidate** | The formats companies generally use, applied to known names — explicitly not derived from this company |
 
-Emails are only kept if they are on the company's own domain, which is what
-stops a journalist's byline or a PR agency's address being reported as a route
-in. LinkedIn profiles are collected as URLs from search results and never
-fetched — the pages sit behind a login, and the point is a link to click. When
-no profile is found the brief says so plainly and offers a search URL, so the
+Emails are kept only if they are on the company's own domain, which stops a
+journalist's byline or a PR agency's address being reported as a route in.
+LinkedIn profiles are collected as URLs from search results and never fetched
+— the pages sit behind a login, and the point is a link to click. Where no
+profile is found the brief says so plainly and offers a search URL, so the
 reader knows whether to look manually or give up.
 
-**Hunter.io is now live** (key verified against their account endpoint). It is
-deliberately *not* called on every run: a confirmed address format makes it
-redundant, so it is held back for runs that came up short.
-
-**A bug this caught.** Kuda's `dpo@` and `fraud@` were being classified as a
-named person's addresses, which inflated how reachable the company looked. The
-role-inbox list now covers compliance, legal, security and finance.
-
-**A second one.** The free allowance was hardcoded at 25/month from Hunter's
-pricing page. The first time the account was actually queried it reported 50.
-The budget guard now takes Hunter's own number, with ours only as a fallback.
+**Hunter.io is live and verified.** The key was checked against Hunter's own
+account endpoint rather than assumed to work. It is deliberately *not* called
+on every run: a confirmed address format makes it redundant, so it is held
+back for runs that came up short.
 
 ---
 
@@ -75,17 +68,14 @@ shutdowns. Nothing measured whether any of them were answered.
 
 Every search is now tagged with the area that asked for it. An area counts as
 covered when a page that search surfaced went on to produce a claim the
-extractor kept. That is a weaker statement than "the question was answered" —
-it is "the search found something worth extracting" — but it is true, it costs
-zero LLM calls, and it cannot drift the way a keyword list would.
+extractor kept. That is weaker than "the question was answered" — it is "the
+search found something worth extracting" — but it is true, costs zero LLM
+calls, and cannot drift the way a keyword list would.
 
-A brief now says *"nothing was found on how they make money"* instead of
-leaving the reader to notice an absence. It appears in the web report, the
-markdown export, and every evaluation result.
-
-The nine areas moved to `backend/services/coverage.py`, next to the code that
-reports on them — a question the search stops asking and a gap the brief stops
-reporting are the same edit.
+**It earned its place on the first live run.** The Spiro brief came back
+8/9, missing *"How the product works"* — five search results, zero claims. For
+a battery-swapping company that is the most interesting thing about it, and
+the brief would otherwise have shipped that gap silently.
 
 ---
 
@@ -102,28 +92,27 @@ these markets. Three changes:
   tier 1 on a bare "investor" substring
 
 Measured on Moniepoint: zero wire results, 10 of 32 sources from African tech
-press. Kuda's run returned 46 sources, up from ~35 before these changes.
+press. Kuda returned 46 sources, Spiro 42.
 
 ---
 
 ## 5. The evaluation's headline metric was measuring almost nothing
 
-This is the most important correction in this report, because it means two
-previously reported figures were wrong.
+The most important correction in this report, because two previously reported
+figures were wrong.
 
 The findings matcher required *every* word of an expected finding to appear,
 so "shutdown or major restructuring" failed unless the brief contained the
-word "or". My first fix over-corrected — "insurance" matched "parametric
+word "or". The first fix over-corrected — "insurance" matched "parametric
 insurance" — so it was replaced with an LLM judge that compares by meaning.
 
-Reported rates of 33% and 25% were artefacts. Real rates: Pula 2/3, Twiga 4/4.
-Re-checked across all four category C companies afterwards, **all 13 expected
-findings are present**. The research half of the tool works; the measurement
-of it did not.
+Reported rates of 33% and 25% were artefacts. Re-checked across all four
+category C companies, **all 13 expected findings are present**. The research
+half of the tool works; the measurement of it did not.
 
 ---
 
-## 6. Category C was evaluated, and the expectations were wrong — not the tool
+## 6. Category C: the expectations were wrong, not the tool
 
 Four companies chosen because the tool was *expected* to be unenthusiastic:
 
@@ -135,35 +124,109 @@ Four companies chosen because the tool was *expected* to be unenthusiastic:
 | Kuda Bank | 8.8 | 8.0 | PURSUE | 4–6 |
 
 Three of four scored PURSUE against low expectations, which looked like a
-scoring failure. On review it was not. The expectations had been written under
-the assumption that a struggling company is not worth pursuing — but
-documenting *how* a company failed is a legitimate case study, and arguably a
-more useful one for students than another success story.
+scoring failure. On review it was not. The expectations assumed a struggling
+company is not worth pursuing — but documenting *how* a company failed is a
+legitimate case study, and arguably more useful to students than another
+success story.
 
-The evaluation set has been rewritten accordingly: two expected ranges per
-company instead of one, with a collapse *raising* the interest expectation and
+The evaluation set is rewritten accordingly: **two expected ranges per company
+instead of one**, with a collapse *raising* the interest expectation and
 lowering the reachability one.
 
-Each expectation now records whether it was written **before or after** its
+Each expectation also records whether it was written **before or after** its
 run. The four category C entries were revised after the fact and are therefore
 weaker evidence than the sixteen still written blind. The scoreboard should
 not pretend otherwise.
 
 ---
 
-## 7. Operational
+## 7. First end-to-end live run: Spiro
 
-- **Usage page** (`/usage-page`) — per-model Gemini headroom, Tavily, Hunter
-  and Apollo, with a live "about N more scouts today" figure. Counters persist
-  in Redis, so Render's frequent restarts no longer reset the day to zero.
-- **Admin gate** — `/usage` is behind a shared token compared with
-  `hmac.compare_digest` and returns 404 rather than 401, so the endpoint does
-  not advertise its own existence. *Not yet active in production: the token
-  still needs setting in Render.*
-- **Hunter validity** — "key is set" and "key works" are different facts, and
-  a rejected key looked identical to a working one until the first lookup. The
-  usage page now asks Hunter directly and reports working / rejected /
-  could-not-check.
+Run against production on the deployed code, not locally.
+
+| | |
+|---|---|
+| Attention / Reach | **8.7 / 8.0 — PURSUE** |
+| Expected (written blind) | 8–10 attention, 6–9 reach — **both in range** |
+| Coverage | 8/9, gap: *How the product works* |
+| Claims / Sources | 16 / 42 |
+| Duration | **97 seconds** (down from 255–317s) |
+| Contacts | 6 addresses found, 4 LinkedIn lookups |
+
+The first blind expectation the tool has been measured against, and it landed.
+
+---
+
+## 8. Four bugs the Spiro run exposed — all fixed
+
+**LinkedIn was excluded from its own search.** `search()` resolved
+`exclude_domains` with `or`, so the explicit empty list the LinkedIn finder
+passes to switch the filter off fell straight back to the default list — which
+contains `linkedin.com`. Every profile lookup the tool has ever done ran with
+LinkedIn excluded. That is why Spiro returned 0 of 4 profiles.
+
+**Role inboxes counted as people.** The check matched the whole local part, so
+Spiro's `callcentre.ke@`, `callcentre.rw@` and `callcentre.ug@` — one inbox per
+country — each counted as a named person's address, as did `communications@`.
+This inflates reachability directly. The leading token now decides it. Second
+time this list has been wrong (Kuda's `dpo@` and `fraud@` were the first).
+
+**`w@spironet.com` was offered as a contact.** Markup bleeding into the regex.
+Single-character local parts are now rejected.
+
+**The company's address format was visible and unused.** Spiro publishes
+`flora.limukii@spironet.com`, but Flora was not among the people the research
+named, so the name-confirmation check found nothing and none of the three
+executives who *were* named got an address. Two alphabetic tokens either side
+of a separator is now enough shape to extrapolate from, labelled as the weaker
+basis it is.
+
+**Bug class note:** two of these (`exclude_domains`, and the Hunter allowance
+guard) were the same mistake — using `or` where `None` was meant, so a
+legitimate falsy value silently fell through to a default. A sweep of the
+remaining `or`-defaults found no further live instances.
+
+---
+
+## 9. A defect found but not yet fixed: people have no tenure
+
+A Spiro brief listed **Jules Samain as co-CEO**. He was, and has since moved
+to Acumen. The extractor read this sentence from Rest of World —
+
+> "…co-CEO Jules Samain told Rest of World"
+
+— and recorded a current role. `Person` carries no date and no
+current/former status, so somebody quoted in an old article is presented
+identically to somebody appointed last month.
+
+This is not bad extraction. The sentence genuinely says he is co-CEO. It is a
+missing field: the tool has no way to express *"this was true when the article
+was written."*
+
+For contrast, the same day's run on the fuller query correctly reported
+**Anant Badjatya as Group CEO** (appointed 10 June 2026) and did not list
+Samain as a person at all. The model is reading the sources correctly; the
+schema cannot hold the answer.
+
+**Verified independently:** Anant Badjatya was appointed Spiro's Group CEO on
+10 June 2026, a newly created role, following a US$215M raise; Kaushik Burman
+continues as CEO of the Mobility Business.
+
+---
+
+## 10. Operational
+
+- **Admin gate is live.** `/usage` sits behind a shared token compared with
+  `hmac.compare_digest`, returning **404 rather than 401** so the endpoint does
+  not advertise its own existence. Verified from outside: no token → 404,
+  wrong token → 404, correct token → 200.
+- **Usage page** — per-model Gemini headroom, Tavily, Hunter and Apollo, with
+  a live "about N more scouts today" figure. Counters persist in Redis, so
+  Render's frequent restarts no longer reset the day to zero.
+- **Hunter validity** — the page reports working / rejected / could-not-check,
+  and now keeps our own call count alongside Hunter's so the two can be
+  compared. Hunter reports a **50/month** allowance, not the 25 assumed from
+  their pricing page.
 - **Sentry** — live, `send_default_pii=False`, secrets scrubbed, and the event
   is dropped entirely if scrubbing itself fails.
 
@@ -171,22 +234,15 @@ not pretend otherwise.
 
 ## Where it stands
 
-**Working and verified:** two-score model, contact discovery across three
-tiers, LinkedIn with explicit not-found reporting, coverage reporting, source
-quality weighting, recency weighting, Hunter integration, background jobs with
-polling, durable caching, admin gate (code), Sentry, usage tracking.
+**Working and verified in production:** two-score model, contact discovery
+across three tiers, coverage reporting, source quality weighting, recency
+weighting, Hunter integration, background jobs with polling, durable caching,
+admin gate, Sentry, usage tracking.
 
-**Outstanding:**
-
-1. `ADMIN_TOKEN` not yet set in Render — the usage page is publicly readable
-2. 16 of 20 evaluation companies unrun (~96 Gemini calls ≈ 5 days of free quota)
-3. `eval/failure_log.md` still largely a template
-4. No audit mode — when a brief looks wrong, the only recourse is Render logs
-5. Stage count is defined in two places (`jobs.py` and `index.html`)
-6. Outreach agent — deliberately held until the evaluation is trustworthy
-7. Discovery feature ("interesting companies in climate tech") — deliberately last
-8. Apollo — dead end, their person-lookup endpoints are paid-only regardless of key
+**Verified only in unit tests, awaiting a live run:** the four contact fixes
+from section 8, LinkedIn profile discovery in particular.
 
 **The binding constraint remains Gemini's free tier:** ~6 calls per scout,
 20 calls per day per model. Multi-model routing across four models with
-fallback chains is what makes the tool usable at all.
+fallback chains is what makes the tool usable at all — roughly 3 fresh
+companies per day, shared across every visitor.
