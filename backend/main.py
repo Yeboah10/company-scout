@@ -63,6 +63,11 @@ async def index():
 cache = BriefCache()
 jobs = JobStore()
 
+# Counters share the brief cache's backend. On Render that is Key Value, which
+# outlives the deploys and idle spin-downs that would otherwise reset the
+# day's usage to zero several times an hour.
+usage.attach_store(cache.backend)
+
 
 def _run_job(job_id: str, query: str) -> None:
     """Run a scout to completion, recording progress against the job.

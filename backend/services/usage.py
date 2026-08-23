@@ -26,6 +26,9 @@ GEMINI_DAILY_PER_MODEL = 20
 TAVILY_MONTHLY = 1000
 HUNTER_MONTHLY = 25
 
+# Where the durable copy of the counters lives.
+_STORE_KEY = "usage-counters"
+
 # Gemini's free-tier day is Pacific.
 _PACIFIC_OFFSET = timedelta(hours=-8)
 
@@ -92,15 +95,58 @@ class UsageTracker:
             self._c.tavily = 0
             self._c.hunter = 0
 
+    # Set by the app once the cache is available. Counters are useless without
+    # it: Render restarts the service on every deploy and after each idle
+    # spin-down, and an in-memory count resets to zero each time.
+    _store = None
+
+    def attach_store(self, store) -> None:
+        """Give the tracker somewhere durable to keep counts.
+
+        `store` needs read(key) and write(key, payload, ttl). Loads whatever is
+        already there so a restart continues the day rather than restarting it.
+        """
+        self._store = store
+        try:
+            raw = store.read(_STORE_KEY)
+            if raw:
+                self.load_json(raw)
+        except Exception:
+            # A missing or unreadable count is not worth failing over.
+            pass
+
+    def _persist(self) -> None:
+        """Caller holds the lock."""
+        if self._store is None:
+            return
+        try:
+            payload = json.dumps(
+                {
+                    "gemini_day": self._c.gemini_day,
+                    "gemini": self._c.gemini,
+                    "gemini_exhausted": sorted(self._c.gemini_exhausted),
+                    "month": self._c.month,
+                    "tavily": self._c.tavily,
+                    "hunter": self._c.hunter,
+                }
+            )
+            # Two days: long enough to survive a restart and the day boundary,
+            # short enough that an abandoned deployment's counts expire.
+            self._store.write(_STORE_KEY, payload, 2 * 86400)
+        except Exception:
+            pass
+
     def record_gemini(self, model: str) -> None:
         with self._lock:
             self._roll()
             self._c.gemini[model] = self._c.gemini.get(model, 0) + 1
+            self._persist()
 
     def mark_exhausted(self, model: str) -> None:
         with self._lock:
             self._roll()
             self._c.gemini_exhausted.add(model)
+            self._persist()
 
     def is_exhausted(self, model: str) -> bool:
         with self._lock:
@@ -111,11 +157,13 @@ class UsageTracker:
         with self._lock:
             self._roll()
             self._c.tavily += n
+            self._persist()
 
     def record_hunter(self, n: int = 1) -> None:
         with self._lock:
             self._roll()
             self._c.hunter += n
+            self._persist()
 
     def snapshot(self, models: list[str]) -> dict:
         """Everything the usage page needs, in one read."""
@@ -159,7 +207,7 @@ class UsageTracker:
                     "remaining": max(0, HUNTER_MONTHLY - self._c.hunter),
                     "resets_in_seconds": seconds_until_month_reset(),
                 },
-                "measured_since_restart": True,
+                "durable": self._store is not None,
             }
 
     def to_json(self) -> str:

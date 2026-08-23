@@ -103,6 +103,21 @@ async function loadUsage() {
                 : '<p class="section-subtitle">Not configured. Set HUNTER_API_KEY to enable email lookups.</p>'}
         </div>
     `;
+
+    // Say which of the two situations the reader is in, rather than always
+    // warning: a durable count is worth trusting, a per-process one is not.
+    const caveat = document.getElementById('usage-caveat');
+    if (caveat) {
+        caveat.textContent = data.durable
+            ? 'Counts are stored in the shared cache, so they survive restarts and '
+              + 'redeploys. They still only include calls this app made — anything '
+              + 'run from your laptop is not counted here. Each provider’s console '
+              + 'remains the authority.'
+            : 'No shared store is attached, so these counts reset every time the '
+              + 'service restarts — which on Render is often. Treat them as a rough '
+              + 'floor, not a measurement.';
+        caveat.classList.toggle('warning', !data.durable);
+    }
 }
 
 document.getElementById('refresh')?.addEventListener('click', loadUsage);

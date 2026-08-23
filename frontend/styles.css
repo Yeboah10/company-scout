@@ -1273,3 +1273,8 @@ a.contact-email:hover { color: var(--accent); text-decoration: underline; }
 }
 
 .usage-links a:hover { color: var(--accent); }
+
+.usage-caveat.warning {
+    border-color: var(--yellow);
+    background: rgba(234, 179, 8, 0.06);
+}
