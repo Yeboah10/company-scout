@@ -263,20 +263,12 @@ async def usage_page():
     return FileResponse(str(FRONTEND_DIR / "usage.html"))
 
 
-@app.get("/debug/monitoring-check")
-async def monitoring_check():
-    """TEMPORARY: confirms events reach Sentry, not just that init succeeded.
-
-    Sends one warning and reports whether monitoring is enabled. Removed once
-    the first event has been seen in the dashboard.
-    """
-    monitoring.warn(
-        "Monitoring check — if you can read this in Sentry, delivery works",
-        check="manual",
-    )
-    return {"monitoring_enabled": monitoring.is_enabled(), "sent": True}
-
-
 @app.get("/health")
 async def health():
-    return {"status": "ok"}
+    """Also reports whether error monitoring is live.
+
+    Kept here rather than in a debug route: whether errors are being reported
+    is part of whether the service is healthy, and a monitoring outage is
+    otherwise invisible by definition.
+    """
+    return {"status": "ok", "monitoring": monitoring.is_enabled()}
