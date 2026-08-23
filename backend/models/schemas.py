@@ -236,6 +236,76 @@ class CompanyBrief(BaseModel):
     # Optional so briefs cached before contact discovery existed still load.
     contacts: Optional[ContactInfo] = None
 
+    # Two questions, deliberately kept apart.
+    #
+    # Averaging them into one number is what let a company that collapsed in
+    # 2023 be reported as HIGH PRIORITY: its collapse made a superb story, and
+    # that pulled the average up past the fact that nobody is left to email.
+    # Both answers matter — the story is why you'd care, the contact route is
+    # whether you can act — so the brief reports each and then says what the
+    # combination means.
+
+    @computed_field
+    @property
+    def interest_score(self) -> float:
+        """Is this worth your attention? Story, case study and research."""
+        s = self.analysis.scores
+        if s is None:
+            return 0.0
+        base = (s.story_score + s.case_study_score + s.research_score) / 3
+        return round(min(10.0, max(0.0, base * s.recency_factor)), 1)
+
+    @computed_field
+    @property
+    def reachability_score(self) -> float:
+        """Can you actually act on it? The model's outreach judgement, held to
+        what the contact search actually turned up."""
+        s = self.analysis.scores
+        if s is None:
+            return 0.0
+
+        score = s.outreach_score
+
+        # A defunct company has no route in, whatever the story is worth.
+        if self.analysis.operational_status in {"defunct", "winding_down"}:
+            return 0.0
+
+        c = self.contacts
+        if c is None:
+            # Contact discovery did not run; the outreach judgement is all
+            # there is, and it was made without knowing if anyone is findable.
+            return round(min(10.0, score * 0.7), 1)
+
+        if any(f.kind == "personal" for f in c.found):
+            pass                      # a named person's published address
+        elif c.found:
+            score *= 0.8              # only a team inbox
+        elif any(l.found and not l.is_company_page for l in c.linkedin):
+            score *= 0.6              # no address, but a person on LinkedIn
+        elif c.inferred:
+            score *= 0.4              # guesses only
+        else:
+            score *= 0.15             # no route at all
+
+        return round(min(10.0, max(0.0, score)), 1)
+
+    @computed_field
+    @property
+    def verdict(self) -> str:
+        """What the two scores together mean for what to do next."""
+        interest = self.interest_score
+        reach = self.reachability_score
+
+        if interest >= 6 and reach >= 6:
+            return "PURSUE"
+        if interest >= 6 and reach >= 3:
+            return "WORTH IT — CONTACT IS THE HARD PART"
+        if interest >= 6:
+            return "WORTH WRITING ABOUT — NO WAY IN"
+        if reach >= 6:
+            return "REACHABLE BUT THIN"
+        return "SKIP"
+
 
 class ScoutRequest(BaseModel):
     query: str = Field(description="Company name or website URL", min_length=1, max_length=200)

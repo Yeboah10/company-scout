@@ -19,6 +19,15 @@ function getRecommendation(scores) {
     return 'SKIP';
 }
 
+function verdictClass(verdict) {
+    // Coloured by what the reader should do, not by the number.
+    if (verdict === 'PURSUE') return 'high';
+    if (verdict && verdict.startsWith('WORTH IT')) return 'worth';
+    if (verdict && verdict.startsWith('WORTH WRITING')) return 'writing';
+    if (verdict === 'REACHABLE BUT THIN') return 'low';
+    return 'skip';
+}
+
 function getBadgeClass(rec) {
     if (rec === 'HIGH PRIORITY') return 'high';
     if (rec === 'WORTH A LOOK') return 'worth';

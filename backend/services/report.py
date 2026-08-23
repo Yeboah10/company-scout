@@ -23,8 +23,12 @@ def brief_to_markdown(brief: CompanyBrief) -> str:
     out.append(f"# {company.name}\n\n")
 
     if scores:
+        out.append(f"## {brief.verdict}\n\n")
         out.append(
-            f"## {scores.overall_score}/10 — {scores.recommendation}\n\n"
+            f"**Worth your attention: {brief.interest_score}/10** "
+            f"— story, case study, research\n\n"
+            f"**Can you reach them: {brief.reachability_score}/10** "
+            f"— contact route and whether they're still trading\n\n"
         )
 
     meta = [
@@ -67,12 +71,11 @@ def brief_to_markdown(brief: CompanyBrief) -> str:
         # Show the adjustment rather than just its result: a score that moved
         # for unexplained reasons is worth less than one you can argue with.
         if scores.recency_factor != 1.0:
-            direction = "raised" if scores.recency_factor > 1 else "reduced"
+            direction = "raised" if scores.recency_factor > 1 else "lowered"
             note = (scores.recency_note or "").replace("\n", " ")
             out.append(
-                f"Average of the four: **{scores.base_score}/10**. "
-                f"Recency {direction} this to **{scores.overall_score}/10** "
-                f"(x{scores.recency_factor:g}). {note}\n\n"
+                f"Evidence age {direction} the attention score by "
+                f"{round(abs(1 - scores.recency_factor) * 100)}%. {note}\n\n"
             )
 
     contacts = getattr(brief, "contacts", None)

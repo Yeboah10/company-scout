@@ -11,23 +11,42 @@ function renderBrief(brief) {
     // Score Banner
     document.getElementById('company-name').textContent = company.name;
 
-    const scoreValue = scores ? scores.overall_score : 'N/A';
-    const recommendation = scores ? getRecommendation(scores) : 'N/A';
-    document.getElementById('score-value').textContent = scoreValue + '/10';
-
+    // Two scores, not one. A company can be fascinating and unreachable, and
+    // a single averaged number hides exactly that — which is how a company
+    // that shut down in 2023 was once reported as HIGH PRIORITY.
     const badge = document.getElementById('score-badge');
-    badge.textContent = recommendation;
-    badge.className = 'score-badge ' + getBadgeClass(recommendation);
+    badge.textContent = brief.verdict || 'N/A';
+    badge.className = 'score-badge ' + verdictClass(brief.verdict);
+
+    const pair = document.getElementById('score-pair');
+    if (pair) {
+        pair.innerHTML = `
+            <div class="score-half">
+                <span class="score-half-label">Worth your attention</span>
+                <span class="score-half-value" style="color:${scoreColor(brief.interest_score)}">
+                    ${brief.interest_score}<span class="score-half-max">/10</span>
+                </span>
+                <span class="score-half-note">story, case study, research</span>
+            </div>
+            <div class="score-half">
+                <span class="score-half-label">Can you reach them</span>
+                <span class="score-half-value" style="color:${scoreColor(brief.reachability_score)}">
+                    ${brief.reachability_score}<span class="score-half-max">/10</span>
+                </span>
+                <span class="score-half-note">contact route and whether they're still trading</span>
+            </div>
+        `;
+    }
 
     // Explain any recency adjustment, so a score that differs from the plain
     // average of the four dimensions doesn't look like an error.
     const recencyEl = document.getElementById('score-recency');
     if (recencyEl) {
         if (scores && scores.recency_factor && scores.recency_factor !== 1) {
-            const dir = scores.recency_factor > 1 ? 'raised' : 'reduced';
+            const dir = scores.recency_factor > 1 ? 'raised' : 'lowered';
             recencyEl.textContent =
-                `Average of the four dimensions is ${scores.base_score}/10; `
-                + `recency ${dir} it to ${scores.overall_score}/10. `
+                `Evidence age ${dir} the attention score by `
+                + `${Math.round(Math.abs(1 - scores.recency_factor) * 100)}%. `
                 + (scores.recency_note || '');
             recencyEl.classList.remove('hidden');
         } else {
