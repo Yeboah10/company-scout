@@ -408,8 +408,41 @@ def print_report():
             total_hit_rate += hit_rate
 
     if scored_count:
-        print(f"\n  Score accuracy:    {scores_in_range}/{scored_count} ({scores_in_range/scored_count:.0%}) in expected range")
-        print(f"  Avg findings rate: {total_hit_rate/scored_count:.0%}")
+        # Blind and revised expectations are not equal evidence, and a single
+        # headline percentage quietly launders the weaker ones into the
+        # stronger number. Reported apart so the scoreboard cannot flatter
+        # itself.
+        blind = [r for r in results
+                 if r.get("expectation_basis") == "written before the run"]
+        blind_ok = sum(1 for r in blind if r.get("score_in_range"))
+        posthoc = [r for r in results
+                   if r.get("expectation_basis") == "revised after seeing the result"]
+        posthoc_ok = sum(1 for r in posthoc if r.get("score_in_range"))
+
+        print(f"\n  Score accuracy:    {scores_in_range}/{scored_count} "
+              f"({scores_in_range/scored_count:.0%}) in expected range")
+        if blind:
+            print(f"    blind:           {blind_ok}/{len(blind)} "
+                  f"({blind_ok/len(blind):.0%}) - the number that counts")
+        if posthoc:
+            print(f"    revised after:   {posthoc_ok}/{len(posthoc)} "
+                  f"- weaker, these expectations were rewritten having seen the runs")
+        print(f"  Avg findings rate: {total_hit_rate/scored_count:.0%} (recall)")
+
+        judged = [r for r in results
+                  if (r.get("precision") or {}).get("precision") is not None]
+        if judged:
+            avg_p = sum(r["precision"]["precision"] for r in judged) / len(judged)
+            bad = sum(len(r["precision"].get("overstated", []))
+                      + len(r["precision"].get("unsupported", [])) for r in judged)
+            print(f"  Avg precision:     {avg_p:.0%} over {len(judged)} judged "
+                  f"({bad} claim(s) not supported by their own source)")
+        else:
+            print("  Avg precision:     not measured - run eval/judge_quality.py")
+
+        novel = sum(len((r.get("discovery") or {}).get("novel", [])) for r in results)
+        if novel:
+            print(f"  Novel findings:    {novel} across all companies")
     print()
 
 

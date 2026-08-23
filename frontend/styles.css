@@ -1370,3 +1370,43 @@ a.contact-email:hover { color: var(--accent); text-decoration: underline; }
     font-size: 0.85rem;
     font-variant-numeric: tabular-nums;
 }
+
+/* Tenure. A role without a date is what misleads, so the date is shown at the
+   same weight as the role rather than as fine print. Former reads as a
+   warning because acting on it means contacting the wrong person. */
+.person-tenure {
+    display: block;
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    margin-top: 2px;
+}
+
+.person-tenure.former {
+    color: var(--amber, #d97706);
+    font-weight: 500;
+}
+
+.contact-warning {
+    margin-top: 6px;
+    font-size: 0.82rem;
+    color: var(--amber, #d97706);
+}
+
+.contact-observed {
+    margin-top: 4px;
+    font-size: 0.78rem;
+    color: var(--text-dim);
+}
+
+/* Daily capacity. Stated quietly before anyone searches — the point is to set
+   an expectation, not to advertise a limitation. */
+.capacity {
+    margin: 0.6rem 0 0;
+    font-size: 0.85rem;
+    color: var(--text-dim);
+    text-align: center;
+}
+
+.capacity.empty {
+    color: var(--amber, #d97706);
+}

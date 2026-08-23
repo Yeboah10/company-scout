@@ -302,8 +302,40 @@ async def usage_report(request: Request):
         snapshot["hunter"]["remaining"] = max(0, account["limit"] - account["used"])
         snapshot["hunter"]["authoritative"] = True
 
+    # What actually happened last time, not just what is configured.
+    snapshot["hunter"]["last_lookup"] = hunter.last_lookup()
+
     snapshot["apollo"]["configured"] = apollo_configured()
     return JSONResponse(content=snapshot)
+
+
+@app.get("/capacity")
+async def capacity():
+    """How many fresh reports are left today. Public, deliberately thin.
+
+    The free tier allows roughly three fresh companies a day across every
+    visitor. Saying nothing about that means the fourth person to arrive types
+    a company name, waits, and is told the run failed — which reads as a broken
+    site rather than a shared budget.
+
+    Only the count and the reset time. Which models are in use, what else is
+    configured and how much of each provider is left stay behind the admin
+    token; none of that helps a visitor decide whether to search.
+    """
+    models = [
+        settings.llm_model_resolver,
+        settings.llm_model_extractor,
+        settings.llm_model_analyst,
+        settings.llm_model_scorer,
+    ]
+    seen: set[str] = set()
+    ordered = [m for m in models + settings.fallback_models
+               if not (m in seen or seen.add(m))]
+    snap = usage.snapshot(ordered)
+    return JSONResponse(content={
+        "scouts_left": snap["gemini"]["approx_scouts_left"],
+        "resets_in_seconds": snap["gemini"]["resets_in_seconds"],
+    })
 
 
 @app.get("/usage-page")

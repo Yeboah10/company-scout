@@ -30,6 +30,16 @@ _ACCOUNT_TTL = 300.0
 _account_lock = threading.Lock()
 _account_cache: tuple[float, dict] | None = None
 
+# What happened the last time a lookup was actually attempted. Our own counter
+# says Hunter was called three times; Hunter's account says zero searches were
+# used. Both cannot be right, and with no record of the outcome there is no
+# way to tell a failing call from a stale counter.
+_last_lookup: dict | None = None
+
+
+def last_lookup() -> dict | None:
+    return _last_lookup
+
 
 def is_configured() -> bool:
     return bool(settings.hunter_api_key)
@@ -104,6 +114,14 @@ def domain_search(domain: str, limit: int = 10) -> dict | None:
     if not is_configured() or not domain:
         return None
 
+    global _last_lookup
+    import time as _time
+
+    def note(outcome: str, **extra) -> None:
+        global _last_lookup
+        _last_lookup = {"at": _time.time(), "domain": domain,
+                        "outcome": outcome, **extra}
+
     try:
         usage.record_hunter()
         r = httpx.get(
@@ -117,14 +135,28 @@ def domain_search(domain: str, limit: int = 10) -> dict | None:
         )
         if r.status_code == 401:
             print("       ! Hunter key rejected", flush=True)
+            note("key_rejected", status=401)
             return None
         if r.status_code == 429:
             print("       ! Hunter monthly allowance used up", flush=True)
+            note("rate_limited", status=429)
             return None
-        r.raise_for_status()
-        return r.json().get("data")
+        if r.status_code >= 400:
+            # Anything else — a plan restriction, a bad parameter — used to
+            # vanish into a generic exception message nobody ever read.
+            body = (r.text or "")[:200]
+            print(f"       ! Hunter returned {r.status_code}: {body}", flush=True)
+            note("http_error", status=r.status_code, detail=body)
+            return None
+        data = r.json().get("data")
+        found = len((data or {}).get("emails") or [])
+        print(f"       > Hunter returned {found} address(es) for {domain}",
+              flush=True)
+        note("ok", status=r.status_code, emails=found)
+        return data
     except Exception as e:
         print(f"       ! Hunter lookup failed: {e}", flush=True)
+        note("exception", detail=f"{type(e).__name__}: {e}"[:200])
         return None
 
 

@@ -165,8 +165,13 @@ def brief_to_markdown(brief: CompanyBrief) -> str:
         out.append("## Key People\n\n")
         for p in evidence.people:
             out.append(
-                f"- **{p.name}** — {p.role} ({p.relationship}) `{p.confidence.value}`\n"
+                f"- **{p.name}** — {p.role} ({p.relationship}) "
+                f"`{p.confidence.value}`\n"
             )
+            # On its own line rather than tucked into the bullet: a role
+            # without a date is the thing that misleads, so the date is not
+            # an afterthought.
+            out.append(f"  - {p.tenure_note}\n")
         out.append("\n")
 
     if evidence.claims:

@@ -14,6 +14,7 @@ to click, not data taken from it.
 """
 
 import re
+from datetime import date
 from urllib.parse import quote_plus
 
 import httpx
@@ -25,6 +26,7 @@ from backend.models.schemas import (
     InferredEmail,
     LinkedInProfile,
     Person,
+    RoleStatus,
 )
 from backend.services.contacts import (
     EmailFinding,
@@ -277,7 +279,13 @@ class Prospector:
                 deduped[url] = text
         pages = list(deduped.items())
 
-        names = [p.name for p in people if p.name]
+        # Somebody who has left is not a contact. Offering a guessed address
+        # for a former executive is the most damaging thing this tool could
+        # produce, so they are kept out of inference entirely rather than
+        # inferred and then disclaimed.
+        current = [p for p in people if p.name and p.status != RoleStatus.FORMER]
+        departed = [p for p in people if p.name and p.status == RoleStatus.FORMER]
+        names = [p.name for p in current]
         report = build_report(pages, domain, names)
 
         # Hunter is far more productive than reading public pages — most
@@ -292,10 +300,14 @@ class Prospector:
         hunter_emails: list[dict] = []
         hunter_pattern = None
         if is_configured():
-            if report.pattern:
+            # Confirmed, not merely present. A pattern read off the shape of
+            # one address is a guess, and a guess is exactly the situation
+            # Hunter exists to settle — gating on `pattern` alone meant the
+            # weaker the evidence, the more certainly Hunter was skipped.
+            if report.pattern and report.pattern_confirmed:
                 print(
                     f"       - Hunter not needed: {report.pattern}@{domain} "
-                    f"already confirmed from published addresses",
+                    f"already confirmed against a known name",
                     flush=True,
                 )
             # Hunter's own count when it can be had, ours only as a fallback:
@@ -379,6 +391,19 @@ class Prospector:
 
         linkedin = self._find_linkedin(company, people)
 
+        today = date.today().isoformat()
+        tenure = {
+            p.name: (p.name, p.status.value, p.tenure_note) for p in people
+        }
+
+        if departed:
+            who = ", ".join(p.name for p in departed)
+            report.note += (
+                f" No address was inferred for {who}: the evidence says they "
+                f"have left, so an address there would reach the wrong person "
+                f"or nobody."
+            )
+
         return ContactInfo(
             company_domain=report.company_domain,
             pattern=report.pattern,
@@ -389,6 +414,7 @@ class Prospector:
                     kind=f.kind,
                     source_url=f.source_url,
                     person=f.person,
+                    observed_on=today,
                 )
                 for f in report.found
             ],
@@ -398,6 +424,8 @@ class Prospector:
                     email=i["email"],
                     pattern=i["pattern"],
                     basis=i.get("basis", "observed at this company"),
+                    person_status=tenure.get(i["person"], (None, "unclear", None))[1],
+                    person_tenure_note=tenure.get(i["person"], (None, None, None))[2],
                 )
                 for i in report.inferred
             ],

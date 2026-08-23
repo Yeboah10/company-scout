@@ -182,10 +182,18 @@ class ResearchPipeline:
                     )
                 )
 
+        # Carry the search snippet onto each claim's source. Without it a
+        # claim cites a URL and nothing else, so there is no way — for a
+        # reader or for an audit — to ask whether the cited page actually
+        # says what the claim says it says.
+        snippets = {r.url: r.snippet for r in all_results if r.snippet}
+
         for claim in claims:
             claim.source.source_quality = _classify_source_quality(
                 claim.source.url, claim.source.publisher
             )
+            if not claim.source.snippet:
+                claim.source.snippet = snippets.get(claim.source.url)
 
         evidence = ResearchEvidence(
             company=company,

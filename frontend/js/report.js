@@ -96,6 +96,7 @@ function renderBrief(brief) {
                 <div class="person-info">
                     <span class="person-name">${esc(p.name)}</span>
                     <span class="person-role"> &mdash; ${esc(p.role)} (${esc(p.relationship)})</span>
+                    <span class="person-tenure ${p.status || 'unclear'}">${esc(p.tenure_note || '')}</span>
                 </div>
                 <span class="confidence ${p.confidence}">${p.confidence}</span>
             </div>

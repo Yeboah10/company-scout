@@ -5,7 +5,8 @@
     "B": "Moderately interesting — should score WORTH A LOOK (6-7.9)",
     "C": "Boring/low-opportunity — should score LOW PRIORITY or SKIP (<6)",
     "D": "Sparse information — system should flag low confidence",
-    "E": "Contradictory/ambiguous — system should flag uncertainty"
+    "E": "Contradictory/ambiguous — system should flag uncertainty",
+    "F": "Regression cases. Each one is a failure this tool actually shipped: a stale role presented as current, a collapse scored as an opportunity, a name that collides, a company whose coverage is mostly syndicated press releases. Hypothetical adversarial tests are guesses about how something might break; these are recordings of how it did."
   },
   "companies": [
     {
@@ -390,6 +391,80 @@
         "expected_interest_range": "4-8",
         "expected_reachability_range": "0-4",
         "basis": "written before the run"
+      }
+    },
+    {
+      "id": 21,
+      "name": "Spiro",
+      "query": "Spiro",
+      "category": "F",
+      "country": "UAE/West Africa",
+      "industry": "Electric vehicles",
+      "expected": {
+        "should_find": [
+          "Anant Badjatya Group CEO 2026",
+          "battery swapping",
+          "leadership change"
+        ],
+        "expected_interest_range": "7-10",
+        "expected_reachability_range": "5-9",
+        "basis": "written before the run",
+        "notes": "REGRESSION: a stale role. Jules Samain was reported as co-CEO after he had left for Acumen. Must mark him former or omit him, and must not infer an email address for him."
+      }
+    },
+    {
+      "id": 22,
+      "name": "54gene",
+      "query": "54gene",
+      "category": "F",
+      "country": "Nigeria",
+      "industry": "Genomics",
+      "expected": {
+        "should_find": [
+          "shutdown",
+          "asset sale or liquidation",
+          "CEO departure"
+        ],
+        "expected_interest_range": "7-10",
+        "expected_reachability_range": "0-2",
+        "basis": "written before the run",
+        "notes": "REGRESSION: a collapse. Interest must stay high and reachability must fall to near zero. Guards the operational_status cap."
+      }
+    },
+    {
+      "id": 23,
+      "name": "MAX",
+      "query": "MAX Nigeria motorcycle logistics",
+      "category": "F",
+      "country": "Nigeria",
+      "industry": "Mobility",
+      "expected": {
+        "should_find": [
+          "motorcycle logistics",
+          "EV pivot"
+        ],
+        "expected_interest_range": "5-8",
+        "expected_reachability_range": "4-8",
+        "basis": "written before the run",
+        "notes": "REGRESSION: name collision. A two-letter name that collides with many companies. Must resolve to the Nigerian mobility company or say it could not."
+      }
+    },
+    {
+      "id": 24,
+      "name": "Moniepoint",
+      "query": "Moniepoint",
+      "category": "F",
+      "country": "Nigeria",
+      "industry": "Fintech",
+      "expected": {
+        "should_find": [
+          "agent banking",
+          "transaction volumes"
+        ],
+        "expected_interest_range": "6-9",
+        "expected_reachability_range": "5-9",
+        "basis": "written before the run",
+        "notes": "REGRESSION: syndication. Heavily press-released. Guards the wire filtering — wire share should stay at zero and African tech press well represented."
       }
     }
   ]

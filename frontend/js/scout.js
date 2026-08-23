@@ -81,7 +81,9 @@ async function scoutCompany(query) {
     } catch (err) {
         clearTimeout(patienceTimeout);
         hideLoading();
-        showError(err.message);
+        if (err.quota) showQuotaExhausted();
+        else showError(err.message);
+        loadCapacity();
     } finally {
         btn.disabled = false;
         steps.forEach(s => {
@@ -118,6 +120,14 @@ async function pollUntilDone(jobId) {
 
         if (job.status === 'done' && job.result) return job.result;
         if (job.status === 'error') {
+            // The quota case is not a fault and should not read like one: the
+            // day's shared budget is spent, and the saved reports below still
+            // cost nothing. Anything else keeps the server's message.
+            if (job.error_kind === 'quota_exhausted') {
+                const e = new Error('QUOTA');
+                e.quota = true;
+                throw e;
+            }
             throw new Error(job.error || 'Research failed. Please try again.');
         }
     }
@@ -159,6 +169,54 @@ function downloadMarkdown() {
     if (!currentShareKey) return;
     window.location.href = `/report/${currentShareKey}.md`;
 }
+/* ---------- Daily capacity ---------- */
+
+// Said before anyone types rather than after they have waited three minutes.
+// The number is deliberately the only thing this endpoint returns.
+function humaniseReset(seconds) {
+    if (seconds == null) return 'tomorrow';
+    const h = Math.floor(seconds / 3600);
+    if (h >= 2) return `in about ${h} hours`;
+    const m = Math.max(1, Math.floor(seconds / 60));
+    return `in about ${m} minutes`;
+}
+
+async function loadCapacity() {
+    const el = document.getElementById('capacity');
+    if (!el) return;
+    let data;
+    try {
+        const r = await fetch('/capacity');
+        if (!r.ok) return;
+        data = await r.json();
+    } catch {
+        return;  // Not knowing the number is no reason to say anything wrong.
+    }
+
+    const n = data.scouts_left;
+    el.classList.remove('hidden', 'empty');
+    if (n > 0) {
+        el.innerHTML = `<strong>${n}</strong> fresh ${n === 1 ? 'report' : 'reports'} left today`
+            + ' &middot; saved reports below are always free';
+    } else {
+        el.classList.add('empty');
+        el.innerHTML = 'Today&rsquo;s fresh reports are used up &mdash; resets '
+            + `${humaniseReset(data.resets_in_seconds)}. Saved reports below still work.`;
+    }
+}
+
+function showQuotaExhausted() {
+    const el = document.getElementById('error');
+    const msg = document.getElementById('error-message');
+    if (!el || !msg) return;
+    msg.innerHTML =
+        '<strong>Today&rsquo;s research budget is spent.</strong><br>'
+        + 'This runs on a free tier that allows about three fresh companies a day, '
+        + 'shared by everyone using the site. It resets overnight. '
+        + 'Any report already saved below still opens instantly and costs nothing.';
+    el.classList.remove('hidden');
+}
+
 /* ---------- Recent scouts ---------- */
 
 async function loadRecent() {
@@ -223,4 +281,5 @@ loadSharedReport();
 // Only worth showing on the home page; a shared report replaces this view.
 if (!/^\/r\//.test(window.location.pathname)) {
     loadRecent();
+    loadCapacity();
 }

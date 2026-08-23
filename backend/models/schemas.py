@@ -39,6 +39,14 @@ class Claim(BaseModel):
     date_of_event: Optional[str] = None
 
 
+class RoleStatus(str, Enum):
+    """Whether a role is held now, was held once, or cannot be told apart."""
+
+    CURRENT = "current"
+    FORMER = "former"
+    UNCLEAR = "unclear"
+
+
 class Person(BaseModel):
     name: str
     role: str
@@ -47,6 +55,33 @@ class Person(BaseModel):
     )
     source: Source
     confidence: Confidence = Confidence.MEDIUM
+
+    # A role is a fact with a date on it. Without these fields a person quoted
+    # in a two-year-old article reads exactly like one appointed last month —
+    # which is how a Spiro brief presented Jules Samain as co-CEO months after
+    # he had moved to Acumen. The risk is not an untidy report; it is an
+    # outreach email to somebody who left.
+    status: RoleStatus = RoleStatus.UNCLEAR
+    role_start: Optional[str] = None
+    role_end: Optional[str] = None
+    # When the evidence was published. The honest claim a source supports is
+    # "held this role as of this date", never "holds this role".
+    as_of: Optional[str] = None
+
+    @computed_field
+    @property
+    def tenure_note(self) -> str:
+        """How this role should be read, in the reader's words."""
+        if self.status == RoleStatus.FORMER:
+            ended = f" until {self.role_end}" if self.role_end else ""
+            return f"Former{ended} — do not treat as a current contact"
+        when = self.as_of or self.source.published_date
+        if self.status == RoleStatus.CURRENT:
+            return f"Current as of {when}" if when else "Reported as current"
+        return (
+            f"Stated as of {when}; not confirmed current" if when
+            else "No date on this evidence; not confirmed current"
+        )
 
 
 class CompanyIdentity(BaseModel):
@@ -230,6 +265,11 @@ class FoundEmail(BaseModel):
     kind: str = "personal"          # "personal" | "role"
     source_url: Optional[str] = None
     person: Optional[str] = None
+    # The date this address was seen on that page. An address is not a
+    # permanent fact about a company — it is something that was published and
+    # readable on a particular day, and outreach months later should know how
+    # old the observation is.
+    observed_on: Optional[str] = None
 
 
 class InferredEmail(BaseModel):
@@ -246,6 +286,12 @@ class InferredEmail(BaseModel):
     # seen at this company is far stronger than one built from what companies
     # generally do, and the reader has to be able to tell them apart.
     basis: str = "observed at this company"
+    # Carried from the person this address is for. A guessed address for
+    # somebody who has left the company is the single worst thing this tool
+    # could hand someone, so the reader is told what is known about their
+    # tenure right where the address is shown.
+    person_status: str = "unclear"
+    person_tenure_note: Optional[str] = None
 
 
 class LinkedInProfile(BaseModel):

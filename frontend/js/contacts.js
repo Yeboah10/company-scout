@@ -27,6 +27,7 @@ function renderContacts(contacts) {
                 </div>
                 ${f.person ? `<div class="contact-person">${escapeHtml(f.person)}</div>` : ''}
                 ${f.source_url ? `<a href="${escapeHtml(f.source_url)}" target="_blank" rel="noopener" class="source-link">${escapeHtml(f.source_url)}</a>` : ''}
+                ${f.observed_on ? `<div class="contact-observed">Seen on that page ${escapeHtml(f.observed_on)}</div>` : ''}
             </div>
         </div>
     `).join('') : '<p class="section-subtitle">No addresses were published on the company&rsquo;s own pages.</p>';
@@ -41,6 +42,9 @@ function renderContacts(contacts) {
                         <button class="copy-claim" type="button" data-email="${escapeHtml(i.email)}">Copy</button>
                     </div>
                     <div class="contact-person">${escapeHtml(i.person)} &middot; <code>${escapeHtml(i.pattern)}</code> &middot; ${escapeHtml(i.basis || '')}</div>
+                    ${i.person_status && i.person_status !== 'current' ? `
+                        <div class="contact-warning">${escapeHtml(i.person_tenure_note || 'Their current role is not confirmed.')}</div>
+                    ` : ''}
                 </div>
             </div>
         `).join('');
