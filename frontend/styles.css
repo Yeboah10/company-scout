@@ -1410,3 +1410,123 @@ a.contact-email:hover { color: var(--accent); text-decoration: underline; }
 .capacity.empty {
     color: var(--amber, #d97706);
 }
+
+/* ---------- About page ----------
+   Long-form reading rather than scanning a report, so the measure is narrower
+   than the app shell and the vertical rhythm is looser. */
+.prose {
+    max-width: 680px;
+    margin: 0 auto;
+}
+
+.prose .section {
+    margin-bottom: 2.4rem;
+}
+
+.prose p {
+    color: var(--text-muted);
+    margin-bottom: 0.9rem;
+}
+
+.prose p:last-child {
+    margin-bottom: 0;
+}
+
+.prose strong {
+    color: var(--text);
+}
+
+.use-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 12px;
+    margin-top: 1rem;
+}
+
+.use-card,
+.score-explain-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+}
+
+.use-card h4,
+.score-explain-card h4 {
+    font-size: 0.95rem;
+    margin-bottom: 6px;
+}
+
+.use-card p,
+.score-explain-card p {
+    font-size: 0.9rem;
+    margin: 0;
+}
+
+.score-explain {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 12px;
+    margin: 1rem 0;
+}
+
+.steps-list {
+    margin: 1rem 0 0 1.1rem;
+    color: var(--text-muted);
+}
+
+.steps-list li {
+    margin-bottom: 0.7rem;
+    padding-left: 4px;
+}
+
+.tier-list,
+.limits-list {
+    margin: 1rem 0 1rem 1.1rem;
+    color: var(--text-muted);
+}
+
+.tier-list li,
+.limits-list li {
+    margin-bottom: 0.7rem;
+    padding-left: 4px;
+}
+
+/* The one place on this page that should stop the eye: a worked example
+   beats another paragraph of explanation. */
+.callout {
+    border-left: 3px solid var(--accent);
+    background: var(--glow);
+    border-radius: 0 8px 8px 0;
+    padding: 14px 16px;
+    margin-top: 1rem;
+}
+
+.about-actions {
+    display: flex;
+    justify-content: center;
+    margin: 2.5rem 0 1rem;
+}
+
+.about-cta {
+    text-decoration: none;
+    display: inline-block;
+}
+
+.footer-link,
+.about-link {
+    color: var(--text-dim);
+    font-size: 0.85rem;
+    text-decoration: none;
+}
+
+.footer-link:hover,
+.about-link:hover {
+    color: var(--accent);
+}
+
+.intro-more {
+    grid-column: 1 / -1;
+    text-align: center;
+    margin-top: 4px;
+}

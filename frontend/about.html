@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>How Company Scout works</title>
+    <meta name="description" content="What Company Scout does, how it researches a company, how to read its scores, and what it cannot tell you.">
+    <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Company Scout">
+    <meta property="og:title" content="How Company Scout works">
+    <meta property="og:description" content="What Company Scout does, how it researches a company, and what it cannot tell you.">
+    <meta property="og:image" content="https://scout.yeboah.works/static/og-image.png">
+    <meta property="og:url" content="https://scout.yeboah.works/about">
+
+    <link rel="stylesheet" href="/static/styles.css">
+    <script>
+        // Applied before first paint so the page never flashes the wrong theme.
+        try {
+            var saved = localStorage.getItem('scout-theme');
+            if (saved === 'light' || saved === 'dark') {
+                document.documentElement.setAttribute('data-theme', saved);
+            }
+        } catch (e) {}
+    </script>
+</head>
+<body>
+    <div id="app">
+        <header class="header">
+            <button
+                id="theme-toggle"
+                class="theme-toggle"
+                type="button"
+                title="Switch between light and dark"
+                aria-label="Switch between light and dark"
+            ></button>
+            <h1 class="logo">How Company Scout works</h1>
+            <p class="tagline">What it does, what it will not do, and how to read it.</p>
+        </header>
+
+        <div class="prose">
+            <section class="section">
+                <h3>The question it answers</h3>
+                <p>
+                    You come across a company &mdash; in an article, a pitch deck, a
+                    conversation &mdash; and you want to know whether it is worth
+                    your time. Not a summary of their website. An assessment.
+                </p>
+                <p>
+                    Company Scout takes a name and comes back with an
+                    evidence-backed brief. Every claim in it traces to a dated
+                    source you can open and check. It is built for African
+                    companies, because that is where the general-purpose tools
+                    are weakest &mdash; they rank syndicated press releases above
+                    the outlets that actually cover these markets.
+                </p>
+                <p>
+                    It is designed to be capable of saying <strong>no</strong>.
+                    A tool that finds every company interesting is not
+                    assessing anything.
+                </p>
+            </section>
+
+            <section class="section">
+                <h3>What you can use it for</h3>
+                <div class="use-grid">
+                    <div class="use-card">
+                        <h4>Deciding what to write about</h4>
+                        <p>
+                            Whether there is a real story here &mdash; a business
+                            model worth explaining, a trajectory worth following,
+                            a failure worth documenting.
+                        </p>
+                    </div>
+                    <div class="use-card">
+                        <h4>Case study research</h4>
+                        <p>
+                            The claims, the numbers and the sources are laid out
+                            with dates attached, so the groundwork is done before
+                            you start writing.
+                        </p>
+                    </div>
+                    <div class="use-card">
+                        <h4>Finding a way in</h4>
+                        <p>
+                            Published addresses, likely address formats and
+                            LinkedIn links &mdash; with guesses labelled as guesses,
+                            never mixed in with confirmed contacts.
+                        </p>
+                    </div>
+                    <div class="use-card">
+                        <h4>Preparing for a conversation</h4>
+                        <p>
+                            Recent developments, leadership, funding history and
+                            what has gone wrong, in one place, before a call or a
+                            meeting.
+                        </p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section">
+                <h3>How a scout actually runs</h3>
+                <p class="section-subtitle">
+                    Six stages. Roughly 100&ndash;300 seconds, depending on how much
+                    has been written about the company.
+                </p>
+                <ol class="steps-list">
+                    <li>
+                        <strong>Resolve the company.</strong> Work out which
+                        company you actually mean. &ldquo;MAX&rdquo; collides with a
+                        dozen others, so this step commits to one and says which.
+                    </li>
+                    <li>
+                        <strong>Search deliberately.</strong> Eleven searches,
+                        nine of them tied to a specific question &mdash; including
+                        one that only ever asks what has gone <em>wrong</em>.
+                    </li>
+                    <li>
+                        <strong>Extract evidence.</strong> Pull individual claims
+                        out of the pages, each tied to the source that supports
+                        it. If nothing usable comes back, the run stops rather
+                        than writing a confident brief from nothing.
+                    </li>
+                    <li>
+                        <strong>Analyse.</strong> Strategic signals, story angles,
+                        case study potential, outreach potential.
+                    </li>
+                    <li>
+                        <strong>Score.</strong> Two numbers, explained below.
+                    </li>
+                    <li>
+                        <strong>Find a route in.</strong> Published addresses,
+                        address formats, LinkedIn links.
+                    </li>
+                </ol>
+            </section>
+
+            <section class="section">
+                <h3>The two scores</h3>
+                <p>
+                    One number could not hold both of these, so there are two.
+                    They are genuinely independent.
+                </p>
+                <div class="score-explain">
+                    <div class="score-explain-card">
+                        <h4>Worth your attention</h4>
+                        <p>
+                            Is there a story, a case study, or research value
+                            here? A company that collapsed can score very highly
+                            &mdash; documenting how something failed is often more
+                            useful than another success story.
+                        </p>
+                    </div>
+                    <div class="score-explain-card">
+                        <h4>Can you reach them</h4>
+                        <p>
+                            Is there a route to an actual person, and is the
+                            company still trading? This drops to zero for a
+                            company that has wound down, however interesting it
+                            is.
+                        </p>
+                    </div>
+                </div>
+                <p class="callout">
+                    <strong>Why both matter.</strong> 54gene, the Nigerian
+                    genomics startup, scores <strong>8.5 for attention</strong> and
+                    <strong>1.0 for reach</strong>. Worth writing about; nobody
+                    left to contact. A single blended score of 4.75 would have
+                    told you nothing useful about either.
+                </p>
+            </section>
+
+            <section class="section">
+                <h3>Coverage &mdash; what it admits it did not find</h3>
+                <p>
+                    Every brief reports which of the nine research questions came
+                    back empty. If nothing was found about how a company makes
+                    money, the brief says so rather than leaving you to notice
+                    the absence.
+                </p>
+                <p>
+                    This is deliberately a fact about the public record, not a
+                    verdict on the company. Plenty of good businesses have simply
+                    never had their economics written about.
+                </p>
+            </section>
+
+            <section class="section">
+                <h3>Contacts: found, inferred, candidate</h3>
+                <p>
+                    These are kept in separate lists and never merged, because a
+                    guess that looks like a confirmed address is how someone ends
+                    up sending a personalised pitch to a stranger.
+                </p>
+                <ul class="tier-list">
+                    <li>
+                        <strong>Found</strong> &mdash; published somewhere public,
+                        with the page that published it, and the date it was seen.
+                    </li>
+                    <li>
+                        <strong>Inferred</strong> &mdash; built from an address
+                        format actually observed at that company. Unverified.
+                    </li>
+                    <li>
+                        <strong>Candidate</strong> &mdash; the formats companies
+                        generally use, applied to a known name. Weakest of the
+                        three, and labelled as such.
+                    </li>
+                </ul>
+                <p>
+                    Where a LinkedIn profile is not found, the brief says so and
+                    gives you a search link, so you know whether to look manually
+                    or move on.
+                </p>
+            </section>
+
+            <section class="section">
+                <h3>What it will not tell you</h3>
+                <p class="section-subtitle">
+                    Worth knowing before you rely on it.
+                </p>
+                <ul class="limits-list">
+                    <li>
+                        <strong>It only knows what has been published.</strong> A
+                        company that keeps a low profile will produce a thin
+                        brief, and that is a fact about coverage rather than
+                        about the company.
+                    </li>
+                    <li>
+                        <strong>Roles carry dates for a reason.</strong> Somebody
+                        described as an executive was described that way by a
+                        source on a particular day. Check before you contact them.
+                    </li>
+                    <li>
+                        <strong>Inferred addresses are guesses.</strong> They are
+                        labelled everywhere they appear. Verify before sending
+                        anything that matters.
+                    </li>
+                    <li>
+                        <strong>It is not financial or investment advice.</strong>
+                        It is a research shortcut, not a recommendation.
+                    </li>
+                    <li>
+                        <strong>There is a daily limit.</strong> This runs on free
+                        infrastructure, which allows roughly three fresh companies
+                        a day across everyone using the site. Reports already
+                        saved open instantly and cost nothing &mdash; the home page
+                        shows what is left.
+                    </li>
+                </ul>
+            </section>
+
+            <section class="section">
+                <h3>Why it is slow the first time</h3>
+                <p>
+                    A fresh scout runs eleven searches and several rounds of
+                    analysis, so it takes a few minutes. The server also sleeps
+                    when nobody is using it, which adds around thirty seconds to
+                    the first request after a quiet spell. A report that has been
+                    scouted before opens instantly.
+                </p>
+            </section>
+
+            <div class="about-actions">
+                <a class="scout-btn about-cta" href="/">Scout a company</a>
+            </div>
+        </div>
+    </div>
+
+    <footer class="site-footer">
+        <a class="footer-link" href="/">Home</a>
+    </footer>
+
+    <script src="/static/js/core.js"></script>
+    <script src="/static/js/theme.js"></script>
+</body>
+</html>

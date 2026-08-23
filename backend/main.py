@@ -309,6 +309,17 @@ async def usage_report(request: Request):
     return JSONResponse(content=snapshot)
 
 
+@app.get("/about")
+async def about_page():
+    """What the tool does, how to read it, and what it will not tell you.
+
+    Its own page rather than more copy on the home page: someone arriving to
+    scout a company wants the search box, and someone deciding whether to
+    trust the output wants several hundred words. Those are different visits.
+    """
+    return FileResponse(str(FRONTEND_DIR / "about.html"))
+
+
 @app.get("/capacity")
 async def capacity():
     """How many fresh reports are left today. Public, deliberately thin.

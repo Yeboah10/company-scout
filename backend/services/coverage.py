@@ -25,7 +25,9 @@ from backend.models.schemas import AreaCoverage, CoverageReport, ResearchEvidenc
 # (key, what to call it in a report, query template)
 COVERAGE_AREAS: list[tuple[str, str, str]] = [
     ("identity", "What they do", "what the company does products services"),
-    ("technology", "How the product works",
+    # "How the product works" read as though it meant this tool rather than
+    # the company being researched. Every label here describes the company.
+    ("technology", "How their product works",
      "technology data platform how the product works"),
     ("business_model", "How they make money",
      "business model revenue pricing how it makes money"),
