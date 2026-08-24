@@ -2263,3 +2263,83 @@ body {
 }
 
 .usage-row-flat:last-child { border-bottom: none; }
+
+/* ---------- People module ----------
+   One card per person: who they are, whether their role is current, and the
+   best route to them. The route badge is the first thing read, because
+   "can I reach this person" is the question the section exists to answer. */
+.person-card-full {
+    padding: 16px 18px;
+    margin-bottom: 10px;
+}
+
+.person-card-full.is-former {
+    opacity: 0.7;
+}
+
+.person-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.person-card-full .person-name {
+    display: block;
+    font-size: 15px;
+    font-weight: 700;
+}
+
+.person-card-full .person-role {
+    display: block;
+    font-size: 12.5px;
+    color: var(--ink-60);
+    margin-top: 1px;
+}
+
+.route-badge {
+    flex-shrink: 0;
+    padding: 3px 8px;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+/* Green only for an address actually published and tied to this person.
+   Everything weaker is amber — the established meaning of amber here is
+   "the evidence is thinner", and a contact route is exactly that kind of
+   claim. Grey for nothing found, which is information, not a failure. */
+.route-badge.found { background: var(--verified-100); color: var(--verified); }
+.route-badge.role,
+.route-badge.inferred,
+.route-badge.linkedin { background: var(--amber-100); color: var(--amber-700); }
+.route-badge.none { background: var(--neutral-200); color: var(--ink-45); }
+
+.person-route {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid var(--rule-soft);
+}
+
+.person-route-note {
+    font-size: 11.5px;
+    color: var(--ink-45);
+}
+
+.contact-email.guess {
+    color: var(--amber-700);
+}
+
+.person-departed {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid var(--rule-soft);
+    font-size: 12px;
+    color: var(--brand-red);
+}

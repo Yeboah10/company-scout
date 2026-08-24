@@ -18,6 +18,13 @@ class CompanySearcher:
     def search_company(self, company: CompanyIdentity) -> list[SearchResult]:
         name = company.name
         country = company.country or ""
+        # The industry is what disambiguates a name that collides. Searching
+        # "Spiro United Arab Emirates technology platform" returned the App
+        # Store listing for Spiro.AI, an unrelated CRM product — four of the
+        # five results for that area were the wrong company entirely. Adding
+        # "Electric vehicles" to the query is the difference between asking
+        # about a company and asking about a word.
+        industry = company.industry or ""
 
         # Derived from today rather than hardcoded, so the recency bias in
         # this query doesn't silently go stale as years pass.
@@ -25,7 +32,7 @@ class CompanySearcher:
         recent_years = f"{this_year - 1} {this_year}"
 
         queries: list[tuple[str, list[str] | None]] = [
-            (f"{name} {country} {template.format(years=recent_years)}", None)
+            (f"{name} {country} {industry} {template.format(years=recent_years)}", None)
             for _, _, template in COVERAGE_AREAS
         ] + [
             # Two passes restricted to outlets that actually report on these

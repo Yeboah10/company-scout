@@ -2,6 +2,110 @@
  * signals, evidence, sources.
  */
 
+/* ---------- People ----------
+ * Joins three things the backend already produces but never showed together:
+ * the person (role, tenure), the best address found for them, and their
+ * LinkedIn result. Ranked so whoever is most reachable sits at the top,
+ * because a list ordered by extraction accident is a list you have to read
+ * end to end.
+ */
+
+// Sort key: a found personal address beats an inferred one, which beats a
+// LinkedIn profile, which beats nothing. Former staff sink regardless — they
+// are shown, because knowing someone has left is useful, but never first.
+function contactRank(entry) {
+    if (entry.person.status === 'former') return 0;
+    if (entry.found && entry.found.kind === 'personal') return 4;
+    if (entry.found) return 3;
+    if (entry.linkedin && entry.linkedin.found) return 2;
+    if (entry.inferred) return 1;
+    return 0;
+}
+
+function routeBadge(entry) {
+    if (entry.found && entry.found.kind === 'personal') {
+        return '<span class="route-badge found">Found</span>';
+    }
+    if (entry.found) {
+        return '<span class="route-badge role">Team inbox</span>';
+    }
+    if (entry.inferred) {
+        return '<span class="route-badge inferred">Inferred</span>';
+    }
+    if (entry.linkedin && entry.linkedin.found) {
+        return '<span class="route-badge linkedin">LinkedIn only</span>';
+    }
+    return '<span class="route-badge none">No route found</span>';
+}
+
+function renderPeople(people, contacts) {
+    const el = document.getElementById('people-list');
+    if (!el) return;
+
+    const found = contacts.found || [];
+    const inferred = contacts.inferred || [];
+    const linkedin = contacts.linkedin || [];
+
+    const entries = people.map(person => ({
+        person,
+        found: found.find(f => f.person && f.person === person.name),
+        inferred: inferred.find(i => i.person === person.name),
+        linkedin: linkedin.find(l => !l.is_company_page && l.person === person.name),
+    }));
+
+    entries.sort((a, b) => contactRank(b) - contactRank(a));
+
+    if (!entries.length) {
+        el.innerHTML = '<p class="section-subtitle">No named people were found for this company.</p>';
+        return;
+    }
+
+    el.innerHTML = entries.map(entry => {
+        const p = entry.person;
+        const isFormer = p.status === 'former';
+
+        // An address for someone who has left is the single most damaging
+        // thing this page could present as usable, so it is never shown as a
+        // route — only the fact that they have gone.
+        const route = isFormer
+            ? '<p class="person-departed">No contact route offered &mdash; the evidence says they have left.</p>'
+            : `
+                ${entry.found ? `
+                    <div class="person-route">
+                        <a class="contact-email" href="mailto:${encodeURIComponent(entry.found.email)}">${esc(entry.found.email)}</a>
+                        ${entry.found.observed_on ? `<span class="person-route-note">seen ${esc(entry.found.observed_on)}</span>` : ''}
+                    </div>` : ''}
+                ${!entry.found && entry.inferred ? `
+                    <div class="person-route">
+                        <span class="contact-email guess">${esc(entry.inferred.email)}</span>
+                        <span class="person-route-note">${esc(entry.inferred.basis || 'inferred')} &mdash; unverified</span>
+                    </div>` : ''}
+                ${entry.linkedin ? `
+                    <div class="person-route">
+                        ${entry.linkedin.found
+                            ? `<a href="${esc(entry.linkedin.url)}" target="_blank" rel="noopener" class="source-link">LinkedIn profile &rarr;</a>`
+                            : `<a href="${esc(entry.linkedin.search_url || '')}" target="_blank" rel="noopener" class="source-link">Not found &mdash; search LinkedIn &rarr;</a>`}
+                    </div>` : ''}
+                ${!entry.found && !entry.inferred && !entry.linkedin
+                    ? '<p class="person-route-note">No address or profile found for this person.</p>' : ''}
+            `;
+
+        return `
+            <div class="card person-card-full ${isFormer ? 'is-former' : ''}">
+                <div class="person-head">
+                    <div>
+                        <span class="person-name">${esc(p.name)}</span>
+                        <span class="person-role">${esc(p.role)}</span>
+                    </div>
+                    ${routeBadge(entry)}
+                </div>
+                <p class="person-tenure ${p.status || 'unclear'}">${esc(p.tenure_note || '')}</p>
+                ${route}
+            </div>
+        `;
+    }).join('');
+}
+
 function renderBrief(brief) {
     const evidence = brief.evidence;
     const analysis = brief.analysis;
@@ -88,20 +192,11 @@ function renderBrief(brief) {
         </div>
     `).join('');
 
-    // People
-    const peopleEl = document.getElementById('people-list');
-    peopleEl.innerHTML = (evidence.people || []).map(p => `
-        <div class="card">
-            <div class="person-card">
-                <div class="person-info">
-                    <span class="person-name">${esc(p.name)}</span>
-                    <span class="person-role"> &mdash; ${esc(p.role)} (${esc(p.relationship)})</span>
-                    <span class="person-tenure ${p.status || 'unclear'}">${esc(p.tenure_note || '')}</span>
-                </div>
-                <span class="confidence ${p.confidence}">${p.confidence}</span>
-            </div>
-        </div>
-    `).join('');
+    // People — each person shown with their own route in, rather than a bare
+    // list of names on one tab and a bare list of addresses on another. The
+    // question a reader actually has is "can I reach this person, and should
+    // I trust that address", and that can only be answered in one place.
+    renderPeople(evidence.people || [], brief.contacts || {});
 
     // Signals
     const signalsEl = document.getElementById('signals-list');

@@ -4,7 +4,7 @@ from tavily import TavilyClient
 
 from backend.config import settings
 from backend.models.schemas import SearchResult
-from backend.services.sources import excluded_domains
+from backend.services.sources import clean_snippet, excluded_domains
 from backend.services.usage import usage
 
 
@@ -65,7 +65,11 @@ class SearchService:
                     query=query,
                     url=r.get("url", ""),
                     title=r.get("title", ""),
-                    snippet=r.get("content", ""),
+                    # Cleaned here, at the only place snippets are created, so every
+                    # downstream consumer — extraction, the evidence
+                    # excerpt in a brief, the precision audit — sees the
+                    # article rather than the page furniture around it.
+                    snippet=clean_snippet(r.get("content", "")),
                     published_date=r.get("published_date"),
                     score=r.get("score"),
                 )
