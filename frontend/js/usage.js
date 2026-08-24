@@ -175,7 +175,10 @@ async function loadUsage() {
                 ? meter('Calls today', data.groq.used, data.groq.limit,
                         data.groq.remaining,
                         `${data.groq.remaining} left · resets in ${humaniseDuration(data.groq.resets_in_seconds)}`)
-                : '<p class="section-subtitle">Not configured. Set GROQ_API_KEY to enable the fallback.</p>'}
+                : '<p class="section-subtitle">Not configured. Set GROQ_API_KEY to enable it — tried first.</p>'}
+            ${data.cerebras && data.cerebras.configured
+                ? `<p class="section-subtitle">Cerebras (second in line): <strong>${data.cerebras.used}</strong> call(s) today · resets in ${humaniseDuration(data.cerebras.resets_in_seconds)}</p>`
+                : '<p class="section-subtitle">Cerebras not configured. Set CEREBRAS_API_KEY to add it as a second fallback.</p>'}
         </div>
 
         <div class="section">

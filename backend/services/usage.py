@@ -35,6 +35,7 @@ APOLLO_MONTHLY = 100
 # provider's own console remains the authority, same disclaimer as everywhere
 # else on this page.
 GROQ_DAILY = 14_400
+CEREBRAS_DAILY_TOKENS = 1_000_000
 
 # Where the durable copy of the counters lives.
 _STORE_KEY = "usage-counters"
@@ -83,6 +84,7 @@ class _Counters:
     # Rides the same daily boundary as Gemini — Groq's own limit resets
     # daily, unlike Tavily/Hunter/Apollo below, which reset monthly.
     groq: int = 0
+    cerebras: int = 0
 
     month: str = field(default_factory=_month)
     tavily: int = 0
@@ -103,6 +105,7 @@ class UsageTracker:
             self._c.gemini = {}
             self._c.gemini_exhausted = set()
             self._c.groq = 0
+            self._c.cerebras = 0
 
         month = _month()
         if self._c.month != month:
@@ -146,6 +149,7 @@ class UsageTracker:
                     "hunter": self._c.hunter,
                     "apollo": self._c.apollo,
                     "groq": self._c.groq,
+                    "cerebras": self._c.cerebras,
                 }
             )
             # Two days: long enough to survive a restart and the day boundary,
@@ -206,6 +210,12 @@ class UsageTracker:
             self._c.groq += n
             self._persist()
 
+    def record_cerebras(self, n: int = 1) -> None:
+        with self._lock:
+            self._roll()
+            self._c.cerebras += n
+            self._persist()
+
     def snapshot(self, models: list[str]) -> dict:
         """Everything the usage page needs, in one read."""
         with self._lock:
@@ -263,6 +273,15 @@ class UsageTracker:
                     # is the fallback path, so it shares Gemini's clock.
                     "resets_in_seconds": seconds_until_gemini_reset(),
                 },
+                "cerebras": {
+                    "configured": bool(settings.cerebras_api_key),
+                    # Counted in calls, not tokens: the published limit is
+                    # ~1M tokens/day, but the token cost of a call isn't known
+                    # until after it returns, so this is a call count shown
+                    # next to that figure rather than measured against it.
+                    "used": self._c.cerebras,
+                    "resets_in_seconds": seconds_until_gemini_reset(),
+                },
                 "durable": self._store is not None,
             }
 
@@ -278,6 +297,7 @@ class UsageTracker:
                     "hunter": self._c.hunter,
                     "apollo": self._c.apollo,
                     "groq": self._c.groq,
+                    "cerebras": self._c.cerebras,
                 }
             )
 
@@ -297,6 +317,7 @@ class UsageTracker:
             self._c.hunter = int(d.get("hunter", 0))
             self._c.apollo = int(d.get("apollo", 0))
             self._c.groq = int(d.get("groq", 0))
+            self._c.cerebras = int(d.get("cerebras", 0))
             self._roll()
 
 

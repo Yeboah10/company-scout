@@ -78,6 +78,12 @@ class Settings(BaseSettings):
     # key, behaviour is exactly what it was before this existed.
     groq_api_key: str = ""
     groq_model: str = "llama-3.3-70b-versatile"
+    # Second in the fallback order, tried if Groq is unconfigured or fails.
+    # Free tier caps the context window at ~8K tokens, so this suits
+    # extraction/scoring better than the longer analysis step — but that
+    # only matters if the call is ever actually reached.
+    cerebras_api_key: str = ""
+    cerebras_model: str = "gpt-oss-120b"
 
     # Outbound email. Off unless a key is set — signup and every other flow
     # work exactly as they do now without one; a welcome email is a nice-to-

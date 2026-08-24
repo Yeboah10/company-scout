@@ -60,18 +60,18 @@ class LLMService:
                 # one model's bad call, the whole provider's free tier. Groq
                 # is reached for only here, never as competition for a call
                 # Gemini could still have served.
-                from backend.services import groq_llm, monitoring
+                from backend.services import external_llm, monitoring
 
-                if groq_llm.is_configured():
+                if external_llm.any_configured():
                     print(
                         "       Gemini's free tier is fully spent today — "
-                        "falling back to Groq",
+                        "trying external fallback providers",
                         flush=True,
                     )
                     monitoring.warn(
-                        "Gemini daily quota exhausted; used Groq fallback"
+                        "Gemini daily quota exhausted; used external fallback"
                     )
-                    return groq_llm.extract_structured(system_prompt, user_prompt)
+                    return external_llm.extract_structured(system_prompt, user_prompt)
                 raise
             except QuotaExhaustedError:
                 # Retrying cannot succeed, and each attempt costs the caller
