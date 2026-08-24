@@ -107,6 +107,7 @@ async function scoutCompany(query) {
         clearTimeout(patienceTimeout);
         hideLoading();
         if (err.quota) showQuotaExhausted();
+        else if (err.searchQuota) showSearchQuotaExhausted();
         else showError(err.message);
         loadCapacity();
     } finally {
@@ -150,6 +151,11 @@ async function pollUntilDone(jobId) {
             if (job.error_kind === 'quota_exhausted') {
                 const e = new Error('QUOTA');
                 e.quota = true;
+                throw e;
+            }
+            if (job.error_kind === 'search_quota_exhausted') {
+                const e = new Error('SEARCH_QUOTA');
+                e.searchQuota = true;
                 throw e;
             }
             throw new Error(job.error || 'Research failed. Please try again.');
@@ -228,6 +234,22 @@ async function loadCapacity() {
         el.innerHTML = 'Today&rsquo;s fresh reports are used up &mdash; resets '
             + `${humaniseReset(data.resets_in_seconds)}. Saved reports below still work.`;
     }
+}
+
+// A spent search plan is a different problem from a spent AI quota: it
+// resets monthly rather than daily, and no amount of waiting until tomorrow
+// fixes it. Saying so is the difference between a useful message and a
+// pointless retry.
+function showSearchQuotaExhausted() {
+    const el = document.getElementById('error');
+    const msg = document.getElementById('error-message');
+    if (!el || !msg) return;
+    msg.innerHTML =
+        '<strong>The monthly search allowance is used up.</strong><br>'
+        + 'Research needs web search, and this month&rsquo;s allowance is spent. '
+        + 'It resets at the start of next month. Reports already saved below '
+        + 'still open instantly and cost nothing.';
+    el.classList.remove('hidden');
 }
 
 function showQuotaExhausted() {

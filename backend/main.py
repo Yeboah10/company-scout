@@ -21,7 +21,10 @@ from backend.pipeline.researcher import InsufficientEvidenceError, ResearchPipel
 from backend.services.cache import BriefCache
 from backend.services.jobs import STAGE_LABELS, TOTAL_STAGES, JobStore
 from backend.services.llm import QuotaExhaustedError
-from backend.services import auth, db, mailer, monitoring, store, users
+from backend.services.search import SearchQuotaExhaustedError
+from backend.services import (
+    auth, db, mailer, monitoring, store, tavily_usage, users,
+)
 from backend.services.apollo import is_configured as apollo_configured
 from backend.services import hunter
 from backend.services.report import brief_to_markdown
@@ -145,6 +148,17 @@ def _run_job(job_id: str, query: str) -> None:
             job_id,
             status="error",
             error_kind="no_evidence",
+            error=str(e),
+        )
+    except SearchQuotaExhaustedError as e:
+        # Its own error kind, so the page can name the real cause. Told it was
+        # a generic failure, the obvious next move is to try again — which
+        # cannot work and burns another minute finding that out.
+        print(f"[scout] Tavily plan exhausted for query: {query}", flush=True)
+        jobs.update(
+            job_id,
+            status="error",
+            error_kind="search_quota_exhausted",
             error=str(e),
         )
     except QuotaExhaustedError as e:
@@ -358,6 +372,18 @@ async def usage_report(request: Request):
     snapshot["hunter"]["last_lookup"] = hunter.last_lookup()
 
     snapshot["apollo"]["configured"] = apollo_configured()
+    # Tavily's own number, not ours. Ours said 367 used while Tavily said
+    # 1,205 against a 1,000 limit — a counter that only ever saw this
+    # process's calls, reporting headroom that did not exist.
+    tav = tavily_usage.fetch()
+    if tav.get("available"):
+        snapshot["tavily"]["used"] = tav["used"]
+        snapshot["tavily"]["limit"] = tav["limit"]
+        snapshot["tavily"]["remaining"] = tav["remaining"]
+        snapshot["tavily"]["plan"] = tav.get("plan")
+        snapshot["tavily"]["exhausted"] = tav.get("exhausted")
+        snapshot["tavily"]["authoritative"] = True
+
     snapshot["accounts"] = users.summary()
     snapshot["mail"] = {"configured": mailer.is_configured()}
     return JSONResponse(content=snapshot)

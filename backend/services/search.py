@@ -8,6 +8,16 @@ from backend.services.sources import clean_snippet, excluded_domains
 from backend.services.usage import usage
 
 
+class SearchQuotaExhaustedError(Exception):
+    """The Tavily plan's monthly allowance is spent.
+
+    Separate from any Gemini quota error: they exhaust independently, they
+    reset on different schedules, and telling a user "we are out of AI
+    credits" when the real problem is search would send them to the wrong
+    dashboard.
+    """
+
+
 class SearchService:
     def __init__(self):
         self.client = TavilyClient(api_key=settings.tavily_api_key)
@@ -58,6 +68,18 @@ class SearchService:
             response = self.client.search(
                 query=query, max_results=max_results, include_answer=False
             )
+        except Exception as e:
+            # Tavily answers an exhausted monthly plan with 432, which is not
+            # a real HTTP status and appears nowhere in their documentation —
+            # it surfaced here as a bare HTTPError and reached the user as
+            # "something went wrong", which is true and useless. A spent plan
+            # is not a crash: it has a cause, a reset date, and an action.
+            if "432" in str(e):
+                raise SearchQuotaExhaustedError(
+                    "The monthly search allowance is spent. Research cannot "
+                    "run until it resets or the plan is upgraded."
+                ) from e
+            raise
         results = []
         for r in response.get("results", []):
             results.append(

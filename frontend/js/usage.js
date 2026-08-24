@@ -160,9 +160,16 @@ async function loadUsage() {
 
         <div class="section">
             <h3>Tavily — search</h3>
+            ${data.tavily.exhausted
+                ? '<p class="section-subtitle warning"><strong>Allowance spent.</strong> '
+                  + 'No new research can run until this resets — search is the first '
+                  + 'step of every scout. Saved reports still open.</p>'
+                : ''}
             ${meter('Searches this month', data.tavily.used, data.tavily.limit,
                     data.tavily.remaining,
-                    `${data.tavily.remaining} left · resets in ${humaniseDuration(data.tavily.resets_in_seconds)}`)}
+                    `${data.tavily.remaining} left · ${data.tavily.authoritative
+                        ? 'counted by Tavily'
+                        : 'counted here'}${data.tavily.plan ? ' · ' + escapeHtml(data.tavily.plan) + ' plan' : ''}`)}
         </div>
 
         <div class="section">
