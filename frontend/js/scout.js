@@ -313,7 +313,11 @@ if (!/^\/r\//.test(window.location.pathname)) {
     loadPipelineStages();
     loadRecent();
     loadCapacity();
-    document.querySelector('[data-focus-search]')?.addEventListener('click', () => {
-        document.getElementById('company-input')?.focus();
+    // Two cards now point at the search box rather than one, so bind all of
+    // them rather than only the first match.
+    document.querySelectorAll('[data-focus-search]').forEach(el => {
+        el.addEventListener('click', () => {
+            document.getElementById('company-input')?.focus();
+        });
     });
 }
