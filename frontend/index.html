@@ -202,25 +202,27 @@
 
         <!-- Results -->
         <div id="results" class="hidden">
-            <!-- Score Banner -->
-            <div id="score-banner" class="score-banner">
-                <div class="score-main">
-                    <h2 id="company-name" class="company-name"></h2>
-                    <div class="score-badge-container">
-                        <span id="score-badge" class="score-badge"></span>
-                    </div>
+            <!-- Case file header: who this is, what the verdict is, and
+                 the scores, all above the tabs so they never scroll away
+                 behind a tab change. -->
+            <div id="score-banner" class="case-header">
+                <p class="kicker" id="case-kicker"></p>
+                <div class="case-head-row">
+                    <h2 id="company-name" class="case-company"></h2>
+                    <span id="score-badge" class="case-verdict"></span>
                 </div>
-                <div id="company-meta" class="company-meta"></div>
-                <div id="score-pair" class="score-pair"></div>
-                <div id="score-recency" class="score-recency hidden"></div>
+                <div id="company-meta" class="case-meta"></div>
             </div>
+
+            <!-- Score strip: the four numbers that decide whether to read on. -->
+            <div id="score-strip" class="score-strip"></div>
+            <div id="score-recency" class="score-recency hidden"></div>
 
             <!-- Tabs -->
             <div class="tabs">
-                <button class="tab active" data-tab="overview">Overview</button>
-                <button class="tab" data-tab="signals">Signals</button>
-                <button class="tab" data-tab="opportunities">Opportunities</button>
-                <button class="tab" data-tab="contacts">Contacts</button>
+                <button class="tab active" data-tab="overview">Intelligence</button>
+                <button class="tab" data-tab="opportunities">Case study</button>
+                <button class="tab" data-tab="contacts">People</button>
                 <button class="tab" data-tab="evidence">Evidence</button>
                 <button class="tab" data-tab="sources">Sources</button>
             </div>
@@ -228,32 +230,35 @@
             <!-- Tab Panels -->
             <div id="tab-overview" class="tab-panel active">
                 <div class="section">
-                    <h3>Executive Summary</h3>
-                    <p id="executive-summary" class="summary-text"></p>
+                    <h3>Why this matters</h3>
+                    <p id="executive-summary" class="case-lead"></p>
                 </div>
-                <div class="section">
-                    <h3>Opportunity Scores</h3>
-                    <div id="scores-grid" class="scores-grid"></div>
+
+                <!-- The question worth investigating. Full-bleed, because it
+                     is the one thing on the page that turns research into a
+                     line of enquiry. Taken from the strongest signal's own
+                     question rather than written separately. -->
+                <div id="question-poster" class="question-poster hidden">
+                    <p class="question-kicker">The question worth investigating</p>
+                    <p id="question-text" class="question-text"></p>
                 </div>
+
                 <div class="section">
-                    <h3>Top Priorities</h3>
+                    <h3>Signal ledger</h3>
+                    <p class="section-subtitle">Click a row to open the full reasoning and the question it raises.</p>
+                    <div id="signals-list" class="signal-ledger"></div>
+                </div>
+
+                <div class="section">
+                    <h3>What we don&rsquo;t know</h3>
+                    <p class="section-subtitle">Research areas that came back empty. A gap is a fact about the public record, not a verdict on the company.</p>
+                    <div id="gaps-list"></div>
+                </div>
+
+                <div class="section">
+                    <h3>Top priorities</h3>
                     <p class="section-subtitle">If you only investigate three things, investigate these:</p>
                     <div id="priorities-list"></div>
-                </div>
-                <div class="section">
-                    <h3>People</h3>
-                    <div id="people-list"></div>
-                </div>
-            </div>
-
-            <div id="tab-signals" class="tab-panel">
-                <div class="section">
-                    <h3>Strategic Signals</h3>
-                    <div id="signals-list"></div>
-                </div>
-                <div class="section">
-                    <h3>Story Angles</h3>
-                    <div id="angles-list"></div>
                 </div>
             </div>
 
@@ -266,9 +271,18 @@
                     <h3>Outreach Opportunity</h3>
                     <div id="outreach-content"></div>
                 </div>
+                <div class="section">
+                    <h3>Story angles</h3>
+                    <div id="angles-list"></div>
+                </div>
             </div>
 
             <div id="tab-contacts" class="tab-panel">
+                <div class="section">
+                    <h3>Decision makers</h3>
+                    <p class="section-subtitle">Each person with the best route to them, most reachable first. Anyone the evidence says has left is shown without a route.</p>
+                    <div id="people-list"></div>
+                </div>
                 <div class="section">
                     <h3>Published contacts</h3>
                     <p class="section-subtitle">Addresses found on the company&rsquo;s own pages, with the page that published each one.</p>

@@ -106,41 +106,126 @@ function renderPeople(people, contacts) {
     }).join('');
 }
 
+/* ---------- Score strip ----------
+ * Four numbers above the tabs, so they never scroll away behind a tab change.
+ *
+ * Evidence confidence is computed from the claims themselves, not invented.
+ * The design this follows showed "91%", which no part of the backend
+ * produces — a precise-looking number with nothing behind it is worse than
+ * an honest band, so this reports HIGH / MEDIUM / LOW from the actual
+ * distribution of per-claim confidence and says how many claims it read.
+ */
+function evidenceConfidence(claims) {
+    if (!claims || !claims.length) return { band: 'None', detail: 'no claims' };
+    const high = claims.filter(c => c.confidence === 'high').length;
+    const low = claims.filter(c => c.confidence === 'low').length;
+    const share = high / claims.length;
+    const band = share >= 0.6 ? 'High' : share >= 0.3 ? 'Medium' : 'Low';
+    return { band, detail: `${high} high · ${low} low, of ${claims.length}` };
+}
+
+function scoreCell(label, value, suffix, note, tone) {
+    return `
+        <div class="score-cell">
+            <span class="score-cell-label">${esc(label)}</span>
+            <span class="score-cell-value ${tone || ''}">${esc(value)}<span class="score-cell-suffix">${suffix || ''}</span></span>
+            <span class="score-cell-note">${esc(note || '')}</span>
+        </div>
+    `;
+}
+
+function renderScoreStrip(brief, scores, evidence) {
+    const el = document.getElementById('score-strip');
+    if (!el) return;
+
+    const conf = evidenceConfidence(evidence.claims);
+    const cov = evidence.coverage;
+
+    el.innerHTML = [
+        scoreCell('Worth your attention', brief.interest_score, '/10',
+                  'story, case study, research', 'accent'),
+        scoreCell('Can you reach them', brief.reachability_score, '/10',
+                  'contact route, still trading'),
+        scoreCell('Case study potential',
+                  scores && scores.case_study_score != null ? scores.case_study_score : '—',
+                  scores && scores.case_study_score != null ? '/10' : '',
+                  'teachable decision'),
+        scoreCell('Evidence confidence', conf.band, '', conf.detail),
+        cov
+            ? scoreCell('Coverage', `${cov.covered_count}/${cov.total_areas}`, '',
+                        cov.gaps && cov.gaps.length ? `${cov.gaps.length} area(s) open` : 'all areas covered',
+                        cov.gaps && cov.gaps.length ? 'amber' : '')
+            : '',
+    ].join('');
+}
+
+/* ---------- Question poster ----------
+ * Taken from the strongest signal's own question rather than written
+ * separately — the analyst already produces one per signal, and inventing a
+ * second version would be a claim with nothing behind it.
+ */
+function renderQuestion(signals) {
+    const poster = document.getElementById('question-poster');
+    const text = document.getElementById('question-text');
+    if (!poster || !text) return;
+
+    const order = { high: 3, medium: 2, low: 1 };
+    const best = (signals || [])
+        .filter(s => s.question)
+        .sort((a, b) => (order[b.confidence] || 0) - (order[a.confidence] || 0))[0];
+
+    if (!best) {
+        poster.classList.add('hidden');
+        return;
+    }
+    text.textContent = best.question;
+    poster.classList.remove('hidden');
+}
+
+/* ---------- Gaps ---------- */
+function renderGaps(coverage) {
+    const el = document.getElementById('gaps-list');
+    if (!el) return;
+    const gaps = (coverage && coverage.gaps) || [];
+    if (!gaps.length) {
+        el.innerHTML = '<p class="section-subtitle">Every research area produced evidence.</p>';
+        return;
+    }
+    el.innerHTML = gaps.map(g => `
+        <div class="gap-row">
+            <span class="gap-label">${esc(g)}</span>
+            <span class="gap-badge">Ask in interview</span>
+        </div>
+    `).join('');
+}
+
 function renderBrief(brief) {
     const evidence = brief.evidence;
     const analysis = brief.analysis;
     const scores = analysis.scores;
     const company = evidence.company;
 
-    // Score Banner
+    // Case file header
     document.getElementById('company-name').textContent = company.name;
 
-    // Two scores, not one. A company can be fascinating and unreachable, and
-    // a single averaged number hides exactly that — which is how a company
-    // that shut down in 2023 was once reported as HIGH PRIORITY.
+    const scoutedOn = brief.cached_at
+        ? new Date(brief.cached_at).toLocaleDateString(undefined,
+            { day: 'numeric', month: 'short', year: 'numeric' })
+        : 'just now';
+    document.getElementById('case-kicker').textContent = `Case file · scouted ${scoutedOn}`;
+
     const badge = document.getElementById('score-badge');
     badge.textContent = brief.verdict || 'N/A';
-    badge.className = 'score-badge ' + verdictClass(brief.verdict);
+    badge.className = 'case-verdict ' + verdictClass(brief.verdict);
 
-    const pair = document.getElementById('score-pair');
-    if (pair) {
-        pair.innerHTML = `
-            <div class="score-half">
-                <span class="score-half-label">Worth your attention</span>
-                <span class="score-half-value" style="color:${scoreColor(brief.interest_score)}">
-                    ${brief.interest_score}<span class="score-half-max">/10</span>
-                </span>
-                <span class="score-half-note">story, case study, research</span>
-            </div>
-            <div class="score-half">
-                <span class="score-half-label">Can you reach them</span>
-                <span class="score-half-value" style="color:${scoreColor(brief.reachability_score)}">
-                    ${brief.reachability_score}<span class="score-half-max">/10</span>
-                </span>
-                <span class="score-half-note">contact route and whether they're still trading</span>
-            </div>
-        `;
-    }
+    const meta = [];
+    if (company.country) meta.push(company.country);
+    if (company.industry) meta.push(company.industry);
+    if (company.founded_year) meta.push('Founded ' + company.founded_year);
+    if (company.website) meta.push(company.website);
+    document.getElementById('company-meta').textContent = meta.join(' · ');
+
+    renderScoreStrip(brief, scores, evidence);
 
     // Explain any recency adjustment, so a score that differs from the plain
     // average of the four dimensions doesn't look like an error.
@@ -158,25 +243,8 @@ function renderBrief(brief) {
         }
     }
 
-    const meta = [];
-    if (company.country) meta.push(company.country);
-    if (company.industry) meta.push(company.industry);
-    if (company.website) meta.push(company.website);
-    if (company.founded_year) meta.push('Founded ' + company.founded_year);
-    document.getElementById('company-meta').textContent = meta.join(' | ');
-
     // Executive Summary
     document.getElementById('executive-summary').textContent = analysis.executive_summary;
-
-    // Scores Grid
-    if (scores) {
-        document.getElementById('scores-grid').innerHTML = [
-            scoreCard('Story', scores.story_score, scores.story_reasoning),
-            scoreCard('Case Study', scores.case_study_score, scores.case_study_reasoning),
-            scoreCard('Outreach', scores.outreach_score, scores.outreach_reasoning),
-            scoreCard('Research', scores.research_score, scores.research_reasoning),
-        ].join('');
-    }
 
     // Top Priorities
     const prioritiesEl = document.getElementById('priorities-list');
@@ -199,17 +267,51 @@ function renderBrief(brief) {
     renderPeople(evidence.people || [], brief.contacts || {});
 
     // Signals
+    // Signal ledger: a scannable row per signal that opens in place. The
+    // reasoning matters, but not enough to make you scroll past all of it to
+    // see how many signals there are.
     const signalsEl = document.getElementById('signals-list');
-    signalsEl.innerHTML = (analysis.signals || []).map((s, i) => `
-        <div class="card">
-            <div class="card-title">Signal ${i + 1}: ${esc(s.title)} <span class="confidence ${s.confidence}">${s.confidence}</span></div>
-            <div class="card-body">
-                <p><span class="card-label">Evidence</span><br>${esc(s.evidence)}</p>
-                <p><span class="card-label">Interpretation</span><br>${esc(s.interpretation)}</p>
-                <p><span class="card-label">Question</span><br>${esc(s.question)}</p>
+    const signals = analysis.signals || [];
+    signalsEl.innerHTML = signals.length ? signals.map((sig, i) => `
+        <div class="signal-row" data-signal="${i}">
+            <button class="signal-head" type="button" aria-expanded="false">
+                <span class="signal-index">${String(i + 1).padStart(2, '0')}</span>
+                <span class="signal-title">${esc(sig.title)}</span>
+                <span class="confidence ${sig.confidence}">${sig.confidence}</span>
+                <span class="signal-toggle" aria-hidden="true">+</span>
+            </button>
+            <div class="signal-body hidden">
+                <p class="signal-part"><span class="card-label">Evidence</span>${esc(sig.evidence)}</p>
+                <p class="signal-part observed"><span class="card-label">What it suggests</span>${esc(sig.interpretation)}</p>
+                <p class="signal-part question"><span class="card-label">Worth asking</span>${esc(sig.question)}</p>
             </div>
         </div>
-    `).join('');
+    `).join('') : '<p class="section-subtitle">No strategic signals were identified.</p>';
+
+    // One open at a time: two expanded rows side by side stop being a ledger
+    // and become the wall of text this replaced.
+    signalsEl.querySelectorAll('.signal-head').forEach(head => {
+        head.onclick = () => {
+            const row = head.closest('.signal-row');
+            const body = row.querySelector('.signal-body');
+            const isOpen = !body.classList.contains('hidden');
+            signalsEl.querySelectorAll('.signal-body').forEach(b => b.classList.add('hidden'));
+            signalsEl.querySelectorAll('.signal-row').forEach(r => r.classList.remove('is-open'));
+            signalsEl.querySelectorAll('.signal-head').forEach(h => {
+                h.setAttribute('aria-expanded', 'false');
+                h.querySelector('.signal-toggle').textContent = '+';
+            });
+            if (!isOpen) {
+                body.classList.remove('hidden');
+                row.classList.add('is-open');
+                head.setAttribute('aria-expanded', 'true');
+                head.querySelector('.signal-toggle').textContent = '−';
+            }
+        };
+    });
+
+    renderQuestion(signals);
+    renderGaps(evidence.coverage);
 
     // Story Angles
     const anglesEl = document.getElementById('angles-list');
@@ -373,14 +475,3 @@ function renderBrief(brief) {
     document.getElementById('tab-overview').classList.add('active');
 }
 
-function scoreCard(label, score, reasoning) {
-    return `
-        <div class="score-card">
-            <div class="score-card-header">
-                <span class="score-card-label">${label}</span>
-                <span class="score-card-value" style="color:${scoreColor(score)}">${score}</span>
-            </div>
-            <div class="score-card-reasoning">${esc(reasoning)}</div>
-        </div>
-    `;
-}
