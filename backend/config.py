@@ -73,6 +73,12 @@ class Settings(BaseSettings):
     # restarts often.
     session_secret: str = ""
 
+    # Groq — the last resort when every Gemini model's daily allowance is
+    # spent, not a substitute for Gemini. Off unless a key is set; with no
+    # key, behaviour is exactly what it was before this existed.
+    groq_api_key: str = ""
+    groq_model: str = "llama-3.3-70b-versatile"
+
     # Outbound email. Off unless a key is set — signup and every other flow
     # work exactly as they do now without one; a welcome email is a nice-to-
     # have, not something anything else should depend on.

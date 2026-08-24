@@ -166,6 +166,19 @@ async function loadUsage() {
         </div>
 
         <div class="section">
+            <h3>Groq — fallback when Gemini is fully spent</h3>
+            <p class="section-subtitle">
+                Only reached once every Gemini model's daily allowance for
+                today is gone. A count above zero means that happened today.
+            </p>
+            ${data.groq && data.groq.configured
+                ? meter('Calls today', data.groq.used, data.groq.limit,
+                        data.groq.remaining,
+                        `${data.groq.remaining} left · resets in ${humaniseDuration(data.groq.resets_in_seconds)}`)
+                : '<p class="section-subtitle">Not configured. Set GROQ_API_KEY to enable the fallback.</p>'}
+        </div>
+
+        <div class="section">
             <h3>Apollo — email lookup by person</h3>
             ${data.apollo && data.apollo.configured
                 ? meter('Lookups this month', data.apollo.used, data.apollo.limit,

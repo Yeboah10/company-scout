@@ -21,6 +21,8 @@ import time
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 
+from backend.config import settings
+
 # Free-tier ceilings, for showing headroom. Update if a plan changes.
 GEMINI_DAILY_PER_MODEL = 20
 TAVILY_MONTHLY = 1000
@@ -29,6 +31,10 @@ TAVILY_MONTHLY = 1000
 # 50 the first time it was asked.
 HUNTER_MONTHLY = 50
 APOLLO_MONTHLY = 100
+# Groq resets daily, not monthly — a rough display figure only; the
+# provider's own console remains the authority, same disclaimer as everywhere
+# else on this page.
+GROQ_DAILY = 14_400
 
 # Where the durable copy of the counters lives.
 _STORE_KEY = "usage-counters"
@@ -74,6 +80,9 @@ class _Counters:
     # Models that returned a daily-quota error today. Believed over the
     # counter: the provider counts attempts this process never saw.
     gemini_exhausted: set[str] = field(default_factory=set)
+    # Rides the same daily boundary as Gemini — Groq's own limit resets
+    # daily, unlike Tavily/Hunter/Apollo below, which reset monthly.
+    groq: int = 0
 
     month: str = field(default_factory=_month)
     tavily: int = 0
@@ -93,6 +102,7 @@ class UsageTracker:
             self._c.gemini_day = today
             self._c.gemini = {}
             self._c.gemini_exhausted = set()
+            self._c.groq = 0
 
         month = _month()
         if self._c.month != month:
@@ -135,6 +145,7 @@ class UsageTracker:
                     "tavily": self._c.tavily,
                     "hunter": self._c.hunter,
                     "apollo": self._c.apollo,
+                    "groq": self._c.groq,
                 }
             )
             # Two days: long enough to survive a restart and the day boundary,
@@ -189,6 +200,12 @@ class UsageTracker:
             self._c.apollo += n
             self._persist()
 
+    def record_groq(self, n: int = 1) -> None:
+        with self._lock:
+            self._roll()
+            self._c.groq += n
+            self._persist()
+
     def snapshot(self, models: list[str]) -> dict:
         """Everything the usage page needs, in one read."""
         with self._lock:
@@ -237,6 +254,15 @@ class UsageTracker:
                     "remaining": max(0, APOLLO_MONTHLY - self._c.apollo),
                     "resets_in_seconds": seconds_until_month_reset(),
                 },
+                "groq": {
+                    "configured": bool(settings.groq_api_key),
+                    "used": self._c.groq,
+                    "limit": GROQ_DAILY,
+                    "remaining": max(0, GROQ_DAILY - self._c.groq),
+                    # Resets with Gemini's day, not the calendar month — this
+                    # is the fallback path, so it shares Gemini's clock.
+                    "resets_in_seconds": seconds_until_gemini_reset(),
+                },
                 "durable": self._store is not None,
             }
 
@@ -251,6 +277,7 @@ class UsageTracker:
                     "tavily": self._c.tavily,
                     "hunter": self._c.hunter,
                     "apollo": self._c.apollo,
+                    "groq": self._c.groq,
                 }
             )
 
@@ -269,6 +296,7 @@ class UsageTracker:
             self._c.tavily = int(d.get("tavily", 0))
             self._c.hunter = int(d.get("hunter", 0))
             self._c.apollo = int(d.get("apollo", 0))
+            self._c.groq = int(d.get("groq", 0))
             self._roll()
 
 
