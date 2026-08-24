@@ -48,8 +48,19 @@ executor = ThreadPoolExecutor(max_workers=2)
 # what the product is for, and a login wall in front of /r/{key} would break
 # the one thing a reader is meant to do with one. The explainer page is public
 # for the same reason: it is how someone decides whether to ask for access.
+#
+# /usage and /usage-page are here too, deliberately: they predate the session
+# login and already carry their own gate — a separate admin token, checked in
+# the route itself, returning 404 rather than 401 so the page does not even
+# admit it exists. Stacking the session wall on top of that would not add
+# security (the token is the real secret either way) and would break the
+# "open the link with ?key= once" flow that page was built around, along
+# with any server-side check of it that has no browser session to carry.
 PUBLIC_PREFIXES = ("/static/", "/r/", "/report/")
-PUBLIC_PATHS = {"/login", "/signup", "/logout", "/health", "/about", "/favicon.ico"}
+PUBLIC_PATHS = {
+    "/login", "/signup", "/logout", "/health", "/about", "/favicon.ico",
+    "/usage", "/usage-page",
+}
 
 
 @app.middleware("http")
