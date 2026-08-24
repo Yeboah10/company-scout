@@ -88,6 +88,9 @@ class _Counters:
 
     month: str = field(default_factory=_month)
     tavily: int = 0
+    # Search fallback, monthly like Tavily rather than daily like the LLM
+    # fallbacks — it substitutes for Tavily, so it shares Tavily's clock.
+    exa: int = 0
     hunter: int = 0
     apollo: int = 0
 
@@ -111,6 +114,7 @@ class UsageTracker:
         if self._c.month != month:
             self._c.month = month
             self._c.tavily = 0
+            self._c.exa = 0
             self._c.hunter = 0
             self._c.apollo = 0
 
@@ -146,6 +150,7 @@ class UsageTracker:
                     "gemini_exhausted": sorted(self._c.gemini_exhausted),
                     "month": self._c.month,
                     "tavily": self._c.tavily,
+                    "exa": self._c.exa,
                     "hunter": self._c.hunter,
                     "apollo": self._c.apollo,
                     "groq": self._c.groq,
@@ -204,6 +209,12 @@ class UsageTracker:
             self._c.apollo += n
             self._persist()
 
+    def record_exa(self, n: int = 1) -> None:
+        with self._lock:
+            self._roll()
+            self._c.exa += n
+            self._persist()
+
     def record_groq(self, n: int = 1) -> None:
         with self._lock:
             self._roll()
@@ -252,6 +263,11 @@ class UsageTracker:
                     "remaining": max(0, TAVILY_MONTHLY - self._c.tavily),
                     "resets_in_seconds": seconds_until_month_reset(),
                 },
+                "exa": {
+                    "configured": bool(settings.exa_api_key),
+                    "used": self._c.exa,
+                    "resets_in_seconds": seconds_until_month_reset(),
+                },
                 "hunter": {
                     "used": self._c.hunter,
                     "limit": HUNTER_MONTHLY,
@@ -294,6 +310,7 @@ class UsageTracker:
                     "gemini_exhausted": sorted(self._c.gemini_exhausted),
                     "month": self._c.month,
                     "tavily": self._c.tavily,
+                    "exa": self._c.exa,
                     "hunter": self._c.hunter,
                     "apollo": self._c.apollo,
                     "groq": self._c.groq,
@@ -314,6 +331,7 @@ class UsageTracker:
             self._c.gemini_exhausted = set(d.get("gemini_exhausted") or [])
             self._c.month = d.get("month", _month())
             self._c.tavily = int(d.get("tavily", 0))
+            self._c.exa = int(d.get("exa", 0))
             self._c.hunter = int(d.get("hunter", 0))
             self._c.apollo = int(d.get("apollo", 0))
             self._c.groq = int(d.get("groq", 0))

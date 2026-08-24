@@ -173,6 +173,17 @@ async function loadUsage() {
         </div>
 
         <div class="section">
+            <h3>Exa — fallback when Tavily is spent</h3>
+            <p class="section-subtitle">
+                Only used once Tavily's monthly plan is gone. A count above zero
+                means that happened this month.
+            </p>
+            ${data.exa && data.exa.configured
+                ? `<p class="section-subtitle"><strong>${data.exa.used}</strong> search(es) this month · resets in ${humaniseDuration(data.exa.resets_in_seconds)}</p>`
+                : '<p class="section-subtitle">Not configured. Set EXA_API_KEY to enable the search fallback.</p>'}
+        </div>
+
+        <div class="section">
             <h3>Groq — fallback when Gemini is fully spent</h3>
             <p class="section-subtitle">
                 Only reached once every Gemini model's daily allowance for

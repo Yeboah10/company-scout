@@ -4,6 +4,7 @@ from tavily import TavilyClient
 
 from backend.config import settings
 from backend.models.schemas import SearchResult
+from backend.services import exa_search, monitoring
 from backend.services.sources import clean_snippet, excluded_domains
 from backend.services.usage import usage
 
@@ -75,6 +76,28 @@ class SearchService:
             # "something went wrong", which is true and useless. A spent plan
             # is not a crash: it has a cause, a reset date, and an action.
             if "432" in str(e):
+                # Exa first, if it is configured. It supports the same
+                # include/exclude domain semantics natively, so falling over
+                # to it does not quietly degrade source quality the way a
+                # site:-operator emulation would.
+                if exa_search.is_configured():
+                    print("       Tavily plan spent — falling back to Exa",
+                          flush=True)
+                    try:
+                        results = exa_search.search(
+                            query,
+                            max_results=max_results,
+                            include_domains=include_domains,
+                            exclude_domains=params.get("exclude_domains"),
+                        )
+                        usage.record_exa()
+                        return results
+                    except Exception as exa_error:
+                        print(f"       ! Exa fallback failed: {exa_error}",
+                              flush=True)
+                        monitoring.warn("Exa fallback failed",
+                                        error=str(exa_error)[:200])
+
                 raise SearchQuotaExhaustedError(
                     "The monthly search allowance is spent. Research cannot "
                     "run until it resets or the plan is upgraded."

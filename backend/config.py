@@ -73,6 +73,12 @@ class Settings(BaseSettings):
     # restarts often.
     session_secret: str = ""
 
+    # Exa — the search fallback, used only once Tavily's monthly plan is
+    # spent. Same relationship as Groq has to Gemini: never competing for a
+    # call, only catching the one that would otherwise fail. Off unless a key
+    # is set.
+    exa_api_key: str = ""
+
     # Groq — the last resort when every Gemini model's daily allowance is
     # spent, not a substitute for Gemini. Off unless a key is set; with no
     # key, behaviour is exactly what it was before this existed.

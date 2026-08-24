@@ -212,19 +212,28 @@ class Prospector:
             )
         )
 
-        # Each person costs search calls, so cap it. Every one gets an entry
-        # whether or not a profile was found.
+        # Person profiles are NOT searched for, deliberately.
+        #
+        # This used to run two searches per person for up to six people —
+        # twelve searches, 41% of a scout's entire search budget — and
+        # measured across live runs it found zero profiles. Not few: zero.
+        # LinkedIn blocks the crawling that would put profile URLs in a search
+        # index, so the searches cannot succeed however many are spent.
+        #
+        # The fallback those searches existed to avoid is what shipped anyway:
+        # a link the reader clicks themselves. That link needs no search to
+        # build, so it is built directly. Same output, twelve fewer calls, and
+        # the budget goes to research that returns something.
+        #
+        # The company page lookup above is kept — that one does work.
         for p in people[:6]:
-            url = lookup(f'"{p.name}" {company.name} linkedin', p, False)
             profiles.append(
                 LinkedInProfile(
                     person=p.name,
                     role=p.role,
-                    url=url,
-                    found=bool(url),
-                    search_url=None if url else _linkedin_search_url(
-                        f"{p.name} {company.name}"
-                    ),
+                    url=None,
+                    found=False,
+                    search_url=_linkedin_search_url(f"{p.name} {company.name}"),
                 )
             )
 
