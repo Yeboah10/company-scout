@@ -1,5 +1,10 @@
 # Tasks — Company Scout
 
+> **This file stopped being updated after Sprint 8** (recency scoring). It is
+> a historical log of the early build, kept for the record rather than
+> revised in place — everything since then, and everything still open, lives
+> in [`BACKLOG.md`](BACKLOG.md), which is the current list.
+
 ## Sprint 1 — Research Engine
 - [x] Initialize repository and project structure
 - [x] Set up Python backend with FastAPI
@@ -25,7 +30,7 @@
 - [x] Implement overall Scout Score
 - [x] Build full Company Intelligence Brief output
 - [x] Build source ledger
-- [ ] Run 20-company evaluation — blocked, see Quota below
+- [x] Run 20-company evaluation — 4 of 20 run as of this writing (category C), with a real precision/discovery judge added afterward; the remaining 16 are BACKLOG.md item C1
 
 ## Sprint 4 — Web Interface
 - [x] Build input screen (plain HTML/CSS/JS, not Next.js)
@@ -84,17 +89,15 @@ Two consequences:
   and reverted: it exhausts the minute budget and later pipeline stages
   stall in backoff, making runs slower (317s parallel vs ~255s sequential).
 
-## Remaining from PRD — the real gap
-- [ ] Run the 20-company evaluation set (eval/companies.json)
-- [ ] Populate eval/failure_log.md with observed failures
+## Remaining from PRD — the real gap, as it stood at Sprint 8
+- [x] Run the 20-company evaluation set (eval/companies.json) — partial, see above
+- [ ] Populate eval/failure_log.md with observed failures — BACKLOG.md C2
 - [x] Make recency actually count in scoring (PRD principle #5)
 
-The evaluation is the largest outstanding item. Until it runs, PRD success
-criteria 2, 4, 6 and 9 are unverified — including "can correctly say some
-companies aren't worth pursuing", which is the product's core claim.
-
-## Possible next steps (UX)
-- [ ] Recent-scouts list on the homepage (cheap now that the cache persists)
+## Possible next steps (UX), as they stood at Sprint 8
+- [x] Recent-scouts list on the homepage — shipped, Postgres-backed rather than cache-backed, which also fixed the duplicate-entry bug the cache version had
 - [ ] Sort evidence recent-first and surface dates prominently
 - [ ] Show which claims corroborate each other across sources
 - [ ] Let the user force a refresh of a cached report
+
+*Everything from here on — the two-score model, contact discovery, coverage reporting, tenure, source quality, the redesign, accounts, Postgres — happened after this file stopped being the record. See `BACKLOG.md` and `UPDATE.md`.*

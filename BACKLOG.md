@@ -9,23 +9,22 @@ Ordered by what actually blocks something, not by effort.
 
 ## Group A — Correctness (the tool is currently wrong about something)
 
-**A1. People have no tenure.**
-`Person` carries no date and no current/former status, so someone quoted in an
-old article reads identically to someone appointed last month. This is how a
-Spiro brief listed Jules Samain as co-CEO after he had moved to Acumen.
-*Fix:* add `status` (current / former / unclear) and an as-of date to `Person`;
-teach the extractor to mark a role historical when the source is old or the
-phrasing is past-tense; show it in the report.
-*Touches:* `schemas.py`, `pipeline/extractor.py`, `services/report.py`, `js/report.js`
-*Why it matters:* it is the one defect that has actually misled a reader.
+**A1. ~~People have no tenure.~~ Done.**
+`Person.status` (current/former/unclear), `role_start`, `role_end`, `as_of`
+and a plain-English `tenure_note` are live. The extractor is asked what a
+source establishes and as of when, not whether someone "is" the CEO, and
+defaults to unclear rather than current on anything it cannot parse. A
+departed person now gets no inferred email at all, and the brief says why by
+name — the actual harm this defect caused, closed at the root rather than
+just labelled.
 
-**A2. The same company gets several cache entries.**
-"Spiro" and "Spiro electric mobility Africa" resolve to the same company but
-get separate share keys, so two Spiro reports sit in "Recently scouted" looking
-equally current — which is how the stale one got read.
-*Fix:* key the cache on the *resolved* company identity, not the raw query;
-dedupe the recent list, newest wins.
-*Touches:* `services/cache.py`, `pipeline/researcher.py`
+**A2. The same company gets several cache entries — partially done.**
+The *symptom* is fixed: `store.recent()` selects `DISTINCT ON (company_id)`
+from Postgres, so "Recently scouted" now shows one Spiro, newest run. The
+underlying cause is not: Redis still keys briefs on the raw query string, so
+"Spiro" and "Spiro electric mobility Africa" still create two separate cache
+entries and two separate share links behind the scenes. Only the list
+visitors actually see was fixed.
 
 **A3. "How the product works" returned 5 results and 0 claims.**
 Coverage caught it on Spiro. Unknown whether the search returns the wrong
@@ -33,30 +32,31 @@ pages or the extractor discards technical detail as unquotable.
 *Fix:* investigate first, then fix whichever it turns out to be. No code
 change until the cause is known.
 
-**A4. Verify the four contact fixes on a live run.**
-LinkedIn discovery, role-inbox classification, the junk-address filter and
-format-from-shape are all verified only in unit tests. Costs one scout.
-*Note:* re-running Spiro is the cleanest comparison, since we have a before.
+**A4. ~~Verify the four contact fixes on a live run.~~ Done.**
+Re-ran Spiro live. Role-inbox classification, the junk-address filter and
+format-from-shape all confirmed correct. LinkedIn found the company page (a
+regression from before) but still 0 of 6 person profiles — a second, deeper
+bug, not yet fixed.
 
-**A5. Confirm Hunter is actually being called.**
-The usage page previously masked our own count with Hunter's, so "never
-called" and "called, their count is stale" looked identical. Reporting is
-fixed; the confirmation still needs a live run. Folds into A4.
+**A5. ~~Confirm Hunter is actually being called.~~ Done, and it wasn't.**
+The live run showed 3 calls on our own counter against 0 on Hunter's — the
+new format-from-shape fix (A1) was itself tripping the "Hunter is redundant"
+gate, since it sets `report.pattern` the same as a confirmed one. Fixed to
+gate on `pattern_confirmed` instead. Every lookup now records its outcome so
+this class of silent mismatch is visible next time, not rediscovered by
+accident.
 
 ---
 
 ## Group B — Before you share the link publicly
 
-**B1. Show remaining capacity before someone searches.**
-~3 fresh scouts per day, shared across all visitors, and the site never
-mentions it. A quiet line under the search box: *"3 fresh reports left today —
-saved reports are always free."*
+**B1. ~~Show remaining capacity before someone searches.~~ Done.**
+Public `/capacity` endpoint, deliberately thin — only the count and reset
+time, nothing that identifies models or providers. Shown under the search box.
 
-**B2. A real out-of-quota state instead of a raw exception.**
-Visitor 4 currently gets `str(e)` from the quota exception, which reads like a
-traceback. Should explain plainly, say when it resets, and point at the
-recent-scouts list, which costs nothing to serve.
-*Touches:* `js/scout.js`, `main.py`
+**B2. ~~A real out-of-quota state instead of a raw exception.~~ Done.**
+`error_kind === 'quota_exhausted'` now routes to its own explanation instead
+of the server's raw message, and points at the saved reports below it.
 
 **B3. Decide what happens when two people scout at once.**
 Two concurrent runs share a 2-worker thread pool and one quota. Currently
@@ -84,20 +84,25 @@ category we have already reasoned through.
 
 ## Group D — Engineering hygiene
 
-**D1. One canonical stage definition.**
-`TOTAL_STAGES = 6` in `services/jobs.py` and six hardcoded `<div id="step-N">`
-in `index.html`. Add a stage and the progress bar silently lies.
+**D1. ~~One canonical stage definition.~~ Done.**
+`STAGE_LABELS` in `services/jobs.py` is now the only place the six stages are
+named; `TOTAL_STAGES` is derived from its length rather than typed a second
+time. `GET /pipeline-stages` serves the list, and `index.html` builds its
+loading rows from it at load rather than hardcoding six `<div>`s — adding a
+stage is one line in Python now, not a Python edit plus an HTML edit someone
+has to remember to make.
 
 **D2. Audit mode.**
 A developer view of intermediate pipeline state. When a brief looks wrong the
 only recourse today is Render logs.
 
-**D3. `TASKS.md` is stale.**
-Lists shipped work as pending. Either update it or fold it into this file.
+**D3. ~~`TASKS.md` is stale.~~ Done.**
+Marked as a historical log frozen at Sprint 8, pointing here for anything
+current, rather than kept in sync with two todo lists forever.
 
-**D4. `max_results or settings.max_search_results` in `search.py:22`.**
-Same `or`-vs-`None` class as the two bugs already fixed. Nobody passes 0
-today, so it is latent rather than live — worth closing while the pattern is
+**D4. ~~`max_results or settings.max_search_results` in `search.py`.~~ Done.**
+Same `or`-vs-`None` class as the two bugs already fixed. Nobody was passing
+0 today, so it was latent rather than live — closed while the pattern was
 fresh.
 
 ---
@@ -112,12 +117,41 @@ regardless of key. The integration exists and stays dormant.
 
 ---
 
+## Group F — New since the redesign (accounts, mail, database)
+
+**F1. LinkedIn person-profile discovery is still broken.**
+The `exclude_domains` fix (A4) got the company page working again but 0 of 6
+person profiles still come back. A second, separate bug in that lookup path —
+not yet diagnosed.
+
+**F2. `mail_from` needs to move off the Resend sandbox address.**
+Currently `onboarding@resend.dev`, which only delivers to the Resend
+account's own inbox. Once `yeboah.works` is verified with Resend, change to
+`tebra@yeboah.works` — a one-line config change, no new setup.
+
+**F3. A real email sequence, not just a welcome email.**
+What exists today is one email sent at signup. A drip sequence (day-3 tip,
+week-1 nudge) needs something that fires independent of a visitor being on
+the site — a scheduler, which does not exist yet. Real infrastructure, not
+a small add.
+
+**F4. Redis cache key duplication (the root cause behind A2).**
+Briefs are keyed on the raw query string, not the resolved company. Fixing
+this at the source — rather than papering over it in the Postgres read path,
+which is what A2 currently does — means resolving the company first and
+keying the cache on that.
+
+---
+
 ## Recommended order
 
-1. **A4 + A5** — one scout, confirms four fixes and answers the Hunter question
-2. **A1** — the defect that actually misled you
-3. **A2** — stops stale reports being presented as current
-4. **B1 + B2** — before the link goes anywhere
-5. **A3** — investigate the coverage gap
-6. **C1** — the eval, on quiet days
+1. **F2** — once `yeboah.works` verifies with Resend, flip the sender address
+2. **F1** — the other half of the LinkedIn fix
+3. **A3** — investigate the coverage gap (still open, still free — no quota
+   needed to look at why "how the product works" returns 5 results and 0
+   claims)
+4. **C1** — the eval, on quiet days
+5. **F4** — close the cache-duplication root cause properly
+6. The Company Workspace redesign — the largest single item, deliberately
+   last: needs your sign-off on direction before building on top of it
 7. Everything else

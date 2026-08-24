@@ -19,7 +19,13 @@ class SearchService:
         include_domains: list[str] | None = None,
         exclude_domains: list[str] | None = None,
     ) -> list[SearchResult]:
-        max_results = max_results or settings.max_search_results
+        # Compared against None, not truthiness — the same class of bug as
+        # the LinkedIn exclude_domains fix and the Hunter allowance guard.
+        # Nobody passes max_results=0 today, so this was latent rather than
+        # live, but "or" would silently ignore an explicit 0 and substitute
+        # the default instead of returning nothing, which is exactly the
+        # wrong behaviour for a caller that meant it.
+        max_results = settings.max_search_results if max_results is None else max_results
 
         params = {
             "query": query,

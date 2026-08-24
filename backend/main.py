@@ -19,7 +19,7 @@ from backend.config import settings
 from backend.models.schemas import ScoutRequest, ScoutResponse
 from backend.pipeline.researcher import InsufficientEvidenceError, ResearchPipeline
 from backend.services.cache import BriefCache
-from backend.services.jobs import TOTAL_STAGES, JobStore
+from backend.services.jobs import STAGE_LABELS, TOTAL_STAGES, JobStore
 from backend.services.llm import QuotaExhaustedError
 from backend.services import auth, db, mailer, monitoring, store, users
 from backend.services.apollo import is_configured as apollo_configured
@@ -451,6 +451,20 @@ async def about_page():
     trust the output wants several hundred words. Those are different visits.
     """
     return FileResponse(str(FRONTEND_DIR / "about.html"))
+
+
+@app.get("/pipeline-stages")
+async def pipeline_stages():
+    """The ordered stage names, so the loading screen is never out of sync
+    with how many stages the pipeline actually runs.
+
+    Fetched once at page load rather than hardcoded as six <div>s in the
+    HTML — the failure this replaces is a Python change to STAGE_LABELS with
+    no matching HTML edit, which is exactly the kind of drift that goes
+    unnoticed until someone counts checkmarks against a seventh stage that
+    never gets a row.
+    """
+    return JSONResponse(content={"stages": STAGE_LABELS})
 
 
 @app.get("/capacity")

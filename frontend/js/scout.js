@@ -1,3 +1,28 @@
+/* ---------- Pipeline stages ----------
+ * Fetched once so the loading screen always shows exactly as many rows as
+ * the backend actually reports against — never hardcoded here.
+ */
+let pipelineStageCount = 0;
+
+async function loadPipelineStages() {
+    const container = document.getElementById('loading-steps');
+    if (!container) return;
+    try {
+        const r = await fetch('/pipeline-stages');
+        if (!r.ok) throw new Error('bad response');
+        const data = await r.json();
+        const stages = data.stages || [];
+        pipelineStageCount = stages.length;
+        container.innerHTML = stages.map((label, i) => `
+            <div id="step-${i + 1}" class="step">${escapeHtml(label)}</div>
+        `).join('');
+    } catch {
+        // No stage list is not worth blocking the page over — the loading
+        // screen just shows the status line without the step-by-step rows.
+        pipelineStageCount = 0;
+    }
+}
+
 /* Running a scout: the search form, job polling, progress, share links,
  * and loading a saved report. Loaded last; owns start-up.
  */
@@ -38,8 +63,8 @@ async function scoutCompany(query) {
     const btn = document.getElementById('scout-btn');
     btn.disabled = true;
 
-    const steps = [1, 2, 3, 4, 5, 6];
-    document.getElementById('step-1').classList.add('active');
+    const steps = Array.from({ length: pipelineStageCount }, (_, i) => i + 1);
+    document.getElementById('step-1')?.classList.add('active');
 
     // Research can take a few minutes on the free hosting tier — reassure
     // the user past a minute so it doesn't look stuck.
@@ -87,8 +112,7 @@ async function scoutCompany(query) {
     } finally {
         btn.disabled = false;
         steps.forEach(s => {
-            const el = document.getElementById('step-' + s);
-            el.classList.remove('active', 'done');
+            document.getElementById('step-' + s)?.classList.remove('active', 'done');
         });
     }
 }
@@ -139,7 +163,8 @@ function updateProgress(job) {
     if (job.message) {
         document.getElementById('loading-status').textContent = job.message;
     }
-    for (let s = 1; s <= 6; s++) {
+    const total = pipelineStageCount || job.total_stages || 0;
+    for (let s = 1; s <= total; s++) {
         const el = document.getElementById('step-' + s);
         if (!el) continue;
         el.classList.remove('active', 'done');
@@ -285,6 +310,7 @@ loadSharedReport();
 
 // Only worth showing on the home page; a shared report replaces this view.
 if (!/^\/r\//.test(window.location.pathname)) {
+    loadPipelineStages();
     loadRecent();
     loadCapacity();
     document.querySelector('[data-focus-search]')?.addEventListener('click', () => {

@@ -18,7 +18,21 @@ from dataclasses import dataclass, field, asdict
 # Jobs are small, but a long-lived process would still accumulate them.
 JOB_TTL_SECONDS = 3600
 
-TOTAL_STAGES = 6
+# The one place the six stages are named. researcher.py reports progress
+# against these indices, the frontend fetches this list at /pipeline-stages
+# to build its loading screen, and TOTAL_STAGES is derived rather than typed
+# a second time — so adding a stage is one line here, not a Python edit plus
+# a matching HTML edit that is easy to forget.
+STAGE_LABELS: list[str] = [
+    "Resolving company identity",
+    "Searching for evidence",
+    "Extracting structured evidence",
+    "Analysing strategic signals",
+    "Scoring opportunity",
+    "Finding contact details",
+]
+
+TOTAL_STAGES = len(STAGE_LABELS)
 
 
 @dataclass

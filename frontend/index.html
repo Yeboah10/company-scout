@@ -168,14 +168,10 @@
                 <div class="spinner"></div>
                 <p id="loading-status" class="loading-status">Researching...</p>
             </div>
-            <div class="loading-steps">
-                <div id="step-1" class="step">Resolving company identity</div>
-                <div id="step-2" class="step">Searching for evidence</div>
-                <div id="step-3" class="step">Extracting structured evidence</div>
-                <div id="step-4" class="step">Analysing strategic signals</div>
-                <div id="step-5" class="step">Scoring opportunity</div>
-                <div id="step-6" class="step">Finding contact details</div>
-            </div>
+            <!-- Populated from /pipeline-stages, not hardcoded: the number of
+                 rows here always matches the number of stages the backend
+                 actually reports, even if that number changes. -->
+            <div id="loading-steps" class="loading-steps"></div>
             <p id="loading-patience" class="loading-patience hidden">Your report is still cooking — this can take a few minutes. Thanks for your patience!</p>
 
             <!-- Skeleton: shows the shape the report will take while it loads -->
