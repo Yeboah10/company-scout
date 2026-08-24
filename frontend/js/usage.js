@@ -5,6 +5,32 @@
  * used?".
  */
 
+// Signed-up users, and whether the welcome email is wired up. Not a growth
+// dashboard — just enough to confirm "did that signup actually happen"
+// without opening a database console.
+function accountsSection(accounts, mail) {
+    if (!accounts || !accounts.enabled) {
+        return '<p class="section-subtitle">No database configured.</p>';
+    }
+    if (accounts.error) {
+        return `<p class="section-subtitle">Could not read accounts: ${escapeHtml(accounts.error)}</p>`;
+    }
+    const mailLine = mail && mail.configured
+        ? 'Welcome email: configured'
+        : 'Welcome email: not configured (set RESEND_API_KEY)';
+    const rows = (accounts.recent || []).map(u => `
+        <div class="usage-row-flat">
+            <span>${escapeHtml(u.email)}</span>
+            <span class="usage-sub">${escapeHtml(new Date(u.created_at).toLocaleString())}</span>
+        </div>
+    `).join('');
+    return `
+        <p class="section-subtitle"><strong>${accounts.total}</strong> account(s) &middot; ${mailLine}</p>
+        ${rows || '<p class="section-subtitle">No signups yet.</p>'}
+    `;
+}
+
+
 function humaniseDuration(seconds) {
     if (seconds == null) return 'unknown';
     const h = Math.floor(seconds / 3600);
@@ -158,6 +184,11 @@ async function loadUsage() {
                             ? 'counted by Hunter'
                             : 'counted here'} · resets in ${humaniseDuration(data.hunter.resets_in_seconds)}`)
                 : '<p class="section-subtitle">Not configured. Set HUNTER_API_KEY to enable email lookups.</p>'}
+        </div>
+
+        <div class="section">
+            <h3>Accounts</h3>
+            ${accountsSection(data.accounts, data.mail)}
         </div>
     `;
 

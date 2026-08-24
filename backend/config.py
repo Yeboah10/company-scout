@@ -73,6 +73,16 @@ class Settings(BaseSettings):
     # restarts often.
     session_secret: str = ""
 
+    # Outbound email. Off unless a key is set — signup and every other flow
+    # work exactly as they do now without one; a welcome email is a nice-to-
+    # have, not something anything else should depend on.
+    resend_api_key: str = ""
+    # Must be on a domain verified with Resend, or sending fails. The
+    # onboarding@resend.dev sandbox address only delivers to your own
+    # account's email, which is enough to prove the wiring works before the
+    # real domain is verified.
+    mail_from: str = "Company Scout <onboarding@resend.dev>"
+
     # Error reporting. Off unless a DSN is set.
     sentry_dsn: str = ""
     sentry_environment: str = "production"

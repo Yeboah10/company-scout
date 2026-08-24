@@ -2252,3 +2252,14 @@ body {
     text-decoration: none;
     color: inherit;
 }
+
+.usage-row-flat {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--rule-soft);
+    font-size: 13px;
+}
+
+.usage-row-flat:last-child { border-bottom: none; }

@@ -21,7 +21,7 @@ from backend.pipeline.researcher import InsufficientEvidenceError, ResearchPipel
 from backend.services.cache import BriefCache
 from backend.services.jobs import TOTAL_STAGES, JobStore
 from backend.services.llm import QuotaExhaustedError
-from backend.services import auth, db, monitoring, store, users
+from backend.services import auth, db, mailer, monitoring, store, users
 from backend.services.apollo import is_configured as apollo_configured
 from backend.services import hunter
 from backend.services.report import brief_to_markdown
@@ -347,6 +347,8 @@ async def usage_report(request: Request):
     snapshot["hunter"]["last_lookup"] = hunter.last_lookup()
 
     snapshot["apollo"]["configured"] = apollo_configured()
+    snapshot["accounts"] = users.summary()
+    snapshot["mail"] = {"configured": mailer.is_configured()}
     return JSONResponse(content=snapshot)
 
 
@@ -402,6 +404,10 @@ async def signup_submit(
     ok, message = users.create(email, password)
     if not ok:
         return RedirectResponse(f"/signup?error={quote(message)}", status_code=303)
+
+    # Best-effort and off the critical path: a mail provider hiccup must not
+    # turn a successful signup into a failed one.
+    mailer.send_welcome(users.normalise_email(email))
 
     # Registering signs you in immediately — a second form to fill in right
     # after the first would be a worse experience than it is worth.

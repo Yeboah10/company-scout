@@ -125,3 +125,31 @@ def verify(email: str, password: str) -> bool:
     except Exception as e:
         print(f"[users] Verify failed: {e}", flush=True)
         return False
+
+
+def summary(limit: int = 10) -> dict:
+    """Account count and the most recent signups, for the admin usage page.
+
+    Not exposed publicly — this goes out only behind the same admin token
+    that already gates /usage.
+    """
+    if not ensure_schema():
+        return {"enabled": False}
+    try:
+        with connect() as conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT count(*) FROM users")
+                total = cur.fetchone()[0]
+                cur.execute(
+                    "SELECT email, created_at FROM users"
+                    " ORDER BY created_at DESC LIMIT %s",
+                    (limit,),
+                )
+                recent = [
+                    {"email": r[0], "created_at": r[1].isoformat()}
+                    for r in cur.fetchall()
+                ]
+        return {"enabled": True, "total": total, "recent": recent}
+    except Exception as e:
+        print(f"[users] Summary failed: {e}", flush=True)
+        return {"enabled": True, "error": str(e)[:200]}
