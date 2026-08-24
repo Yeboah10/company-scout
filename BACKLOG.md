@@ -71,9 +71,11 @@ untested under any concurrency at all.
 expectations are rewritten as two ranges. Do it on quiet days — it consumes
 the same quota visitors need.
 
-**C2. Populate `eval/failure_log.md`.**
-Still largely a template. It is meant to record observed failures, and this
-session alone produced six worth recording.
+**C2. ~~Populate `eval/failure_log.md`.~~ Done.**
+15 real failures logged with root causes, plus the five patterns behind them —
+`or` where `None` was meant (4 occurrences), our count versus the provider's
+(3), a schema missing a dimension the domain has (2), and precise numbers with
+nothing behind them (2). The patterns are the useful part.
 
 **C3. Decide whether to re-run category C under the new expectations.**
 Optional. The four results stand; only the expectations changed. Costs 24
@@ -119,10 +121,22 @@ regardless of key. The integration exists and stays dormant.
 
 ## Group F — New since the redesign (accounts, mail, database)
 
-**F1. LinkedIn person-profile discovery is still broken.**
-The `exclude_domains` fix (A4) got the company page working again but 0 of 6
-person profiles still come back. A second, separate bug in that lookup path —
-not yet diagnosed.
+**F1. ~~LinkedIn person-profile discovery is still broken.~~ Closed — unfixable.**
+Diagnosed: LinkedIn blocks the crawling that would put profile URLs into a
+search index, so no number of searches can find them. The 12 searches per
+scout being spent on this were 41% of the entire search budget and returned
+zero. Removed; the search link they fell back to is now built directly.
+29 searches per scout became 17.
+
+**F5. Exa key not being picked up.**
+`EXA_API_KEY` is set in Render but `/usage` reports `configured: false` —
+likely a variable-name mismatch. Blocks the search fallback, and therefore
+blocks scouting entirely while Tavily is exhausted.
+
+**F6. Verify the coverage fixes on a live run.**
+Industry disambiguation (#3) and snippet cleaning (#4) are both fixed and
+unverified against a real scout. Blocked on F5 or the Tavily reset. Spiro is
+the clean comparison — two prior runs exist.
 
 **F2. `mail_from` needs to move off the Resend sandbox address.**
 Currently `onboarding@resend.dev`, which only delivers to the Resend
@@ -145,13 +159,11 @@ keying the cache on that.
 
 ## Recommended order
 
-1. **F2** — once `yeboah.works` verifies with Resend, flip the sender address
-2. **F1** — the other half of the LinkedIn fix
-3. **A3** — investigate the coverage gap (still open, still free — no quota
-   needed to look at why "how the product works" returns 5 results and 0
-   claims)
-4. **C1** — the eval, on quiet days
+1. **F5** — fix the Exa key name. Nothing else can run while Tavily is
+   exhausted and the fallback is inert.
+2. **F6** — one scout to verify the coverage fixes, once F5 unblocks it
+3. **C1** — the remaining 16 evaluation companies
+4. **F2** — flip the sender address once `yeboah.works` verifies with Resend
 5. **F4** — close the cache-duplication root cause properly
-6. The Company Workspace redesign — the largest single item, deliberately
-   last: needs your sign-off on direction before building on top of it
+6. **D2** — audit mode
 7. Everything else
