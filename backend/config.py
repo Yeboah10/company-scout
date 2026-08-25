@@ -95,11 +95,10 @@ class Settings(BaseSettings):
     # work exactly as they do now without one; a welcome email is a nice-to-
     # have, not something anything else should depend on.
     resend_api_key: str = ""
-    # Must be on a domain verified with Resend, or sending fails. The
-    # onboarding@resend.dev sandbox address only delivers to your own
-    # account's email, which is enough to prove the wiring works before the
-    # real domain is verified.
-    mail_from: str = "Company Scout <onboarding@resend.dev>"
+    # yeboah.works verified with Resend 25 Aug 2026 (DKIM, SPF via the
+    # rsend/send CNAMEs, DMARC). Real inboxes now, not just the account
+    # owner's own address via the resend.dev sandbox.
+    mail_from: str = "Company Scout <tebra@yeboah.works>"
 
     # Error reporting. Off unless a DSN is set.
     sentry_dsn: str = ""
