@@ -31,6 +31,22 @@ function accountsSection(accounts, mail) {
 }
 
 
+// Answers one question: is the tool actually being used instead of manual
+// research? Two accounts existing tells you nothing about that on its own —
+// this is the count that does.
+function activitySection(activity) {
+    if (!activity || !activity.available) {
+        return '<p class="section-subtitle">No database configured.</p>';
+    }
+    return `
+        <p class="section-subtitle">
+            <strong>${activity.total_runs}</strong> scout(s) run in total &middot;
+            <strong>${activity.runs_last_7_days}</strong> in the last 7 days &middot;
+            <strong>${activity.distinct_companies}</strong> distinct companies
+        </p>
+    `;
+}
+
 function humaniseDuration(seconds) {
     if (seconds == null) return 'unknown';
     const h = Math.floor(seconds / 3600);
@@ -223,6 +239,11 @@ async function loadUsage() {
         <div class="section">
             <h3>Accounts</h3>
             ${accountsSection(data.accounts, data.mail)}
+        </div>
+
+        <div class="section">
+            <h3>Activity</h3>
+            ${activitySection(data.activity)}
         </div>
     `;
 

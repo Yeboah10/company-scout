@@ -282,3 +282,45 @@ def history(company_name: str, limit: int = 10) -> list[dict]:
     except Exception as e:
         print(f"[store] History failed: {e}", flush=True)
         return []
+
+
+def activity_summary() -> dict:
+    """How much the tool is actually being used.
+
+    Every run already lands in scout_runs, so this is a read of data that
+    exists anyway rather than a new thing to track. The one question this
+    answers — is anyone using it instead of doing the research by hand — had
+    no answer before this: two accounts existed and nothing recorded whether
+    either had ever run a real scout.
+    """
+    if not is_enabled():
+        return {"available": False}
+    try:
+        with _connect() as conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT count(*) FROM scout_runs")
+                total = cur.fetchone()[0]
+                cur.execute(
+                    "SELECT count(*) FROM scout_runs"
+                    " WHERE created_at > now() - interval '7 days'"
+                )
+                last_7d = cur.fetchone()[0]
+                cur.execute(
+                    "SELECT count(DISTINCT company_id) FROM scout_runs"
+                )
+                distinct_companies = cur.fetchone()[0]
+                cur.execute(
+                    "SELECT owner, count(*) FROM scout_runs"
+                    " WHERE owner IS NOT NULL GROUP BY owner ORDER BY 2 DESC"
+                )
+                by_owner = [{"owner": r[0], "runs": r[1]} for r in cur.fetchall()]
+        return {
+            "available": True,
+            "total_runs": total,
+            "runs_last_7_days": last_7d,
+            "distinct_companies": distinct_companies,
+            "by_owner": by_owner,
+        }
+    except Exception as e:
+        print(f"[store] Activity summary failed: {e}", flush=True)
+        return {"available": False, "reason": str(e)[:200]}

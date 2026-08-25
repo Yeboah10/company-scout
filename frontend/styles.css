@@ -2582,3 +2582,106 @@ body {
     .score-cell:first-child { padding-left: 20px; }
     .signal-body { padding-left: 10px; }
 }
+
+/* ---------- Outreach composer ----------
+   Bigger than the changelog panel it borrows its shell from — a message
+   worth reading needs more room than a list of version notes does. */
+.outreach-panel {
+    width: min(520px, calc(100vw - 40px));
+    max-height: min(680px, calc(100vh - 40px));
+}
+
+.outreach-body {
+    overflow-y: auto;
+    padding: 14px 18px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.outreach-body .field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.outreach-textarea {
+    resize: vertical;
+    min-height: 160px;
+    line-height: 1.6;
+    font-family: inherit;
+}
+
+.outreach-tier-note {
+    padding: 8px 10px;
+    font-size: 12px;
+    line-height: 1.5;
+    border-left: 3px solid var(--verified);
+    background: var(--verified-100);
+}
+
+.outreach-tier-note.inferred {
+    border-left-color: var(--amber);
+    background: var(--amber-100);
+    color: var(--amber-700);
+}
+
+.outreach-evidence summary {
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--ink-60);
+}
+
+.outreach-evidence ul {
+    margin: 8px 0 0;
+    padding-left: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.outreach-evidence li {
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--ink-60);
+}
+
+.outreach-status {
+    font-size: 12.5px;
+    font-weight: 700;
+}
+
+.outreach-status-error {
+    color: var(--brand-red);
+}
+
+.outreach-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    padding-top: 4px;
+    border-top: 1px solid var(--rule-soft);
+}
+
+/* Person card button, People tab */
+.outreach-draft-btn {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid var(--rule-soft);
+    background: none;
+    border-left: none;
+    border-right: none;
+    border-bottom: none;
+    font: inherit;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--accent-text);
+    cursor: pointer;
+    text-align: left;
+    width: 100%;
+}
+
+.outreach-draft-btn:hover {
+    color: var(--accent-hover);
+}

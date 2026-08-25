@@ -22,6 +22,17 @@ function contactRank(entry) {
     return 0;
 }
 
+// Whether outreach can be drafted for this person at all — mirrors the
+// server-side check in outreach.py so the button never promises something
+// the backend will refuse. The backend re-checks regardless; this is only
+// about not showing a button that would just bounce.
+function canDraftOutreach(entry) {
+    if (entry.person.status === 'former') return false;
+    if (entry.found && entry.found.kind === 'personal') return true;
+    if (entry.inferred && !(entry.inferred.basis || '').includes('common format')) return true;
+    return false;
+}
+
 function routeBadge(entry) {
     if (entry.found && entry.found.kind === 'personal') {
         return '<span class="route-badge found">Found</span>';
@@ -101,9 +112,18 @@ function renderPeople(people, contacts) {
                 </div>
                 <p class="person-tenure ${p.status || 'unclear'}">${esc(p.tenure_note || '')}</p>
                 ${route}
+                ${canDraftOutreach(entry) ? `
+                    <button class="outreach-draft-btn" type="button" data-person="${esc(p.name)}">
+                        Draft outreach &rarr;
+                    </button>
+                ` : ''}
             </div>
         `;
     }).join('');
+
+    el.querySelectorAll('.outreach-draft-btn').forEach(btn => {
+        btn.addEventListener('click', () => openOutreachComposer(btn.dataset.person));
+    });
 }
 
 /* ---------- Score strip ----------

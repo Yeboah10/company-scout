@@ -55,33 +55,50 @@ WELCOME_HTML = """\
 """
 
 
-def send_welcome(to_email: str) -> bool:
-    """Best-effort. Returns whether it went out; never raises."""
+def _send(to_email: str, subject: str, *, html: str | None = None,
+          text: str | None = None, label: str = "email") -> bool:
+    """Shared Resend call. Best-effort — returns whether it went out, never
+    raises, so a mail provider's bad day cannot break whatever triggered it."""
     if not is_configured():
-        print(f"[mailer] RESEND_API_KEY not set — skipping welcome email to {to_email}",
+        print(f"[mailer] RESEND_API_KEY not set — skipping {label} to {to_email}",
               flush=True)
         return False
+
+    payload = {"from": settings.mail_from, "to": [to_email], "subject": subject}
+    if html:
+        payload["html"] = html
+    if text:
+        payload["text"] = text
 
     try:
         r = httpx.post(
             _API,
             headers={"Authorization": f"Bearer {settings.resend_api_key}"},
-            json={
-                "from": settings.mail_from,
-                "to": [to_email],
-                "subject": WELCOME_SUBJECT,
-                "html": WELCOME_HTML,
-            },
+            json=payload,
             timeout=_TIMEOUT,
         )
         if r.status_code >= 400:
-            print(f"[mailer] Resend rejected the welcome email ({r.status_code}): "
+            print(f"[mailer] Resend rejected the {label} ({r.status_code}): "
                   f"{r.text[:200]}", flush=True)
-            monitoring.warn("Welcome email rejected", status=r.status_code)
+            monitoring.warn(f"{label} rejected", status=r.status_code)
             return False
-        print(f"[mailer] Welcome email sent to {to_email}", flush=True)
+        print(f"[mailer] {label} sent to {to_email}", flush=True)
         return True
     except Exception as e:
-        print(f"[mailer] Welcome email failed: {e}", flush=True)
-        monitoring.warn("Welcome email failed", error=str(e)[:200])
+        print(f"[mailer] {label} failed: {e}", flush=True)
+        monitoring.warn(f"{label} failed", error=str(e)[:200])
         return False
+
+
+def send_welcome(to_email: str) -> bool:
+    return _send(to_email, WELCOME_SUBJECT, html=WELCOME_HTML, label="welcome email")
+
+
+def send_raw(to_email: str, subject: str, body: str) -> bool:
+    """A plain-text send — outreach, not a templated notification.
+
+    Deliberately plain text rather than HTML: an outreach email dressed up
+    with a template reads as a mail-merge, and the whole point of drafting
+    from real evidence is that it should not.
+    """
+    return _send(to_email, subject, text=body, label="outreach email")

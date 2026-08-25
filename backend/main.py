@@ -23,7 +23,7 @@ from backend.services.jobs import STAGE_LABELS, TOTAL_STAGES, JobStore
 from backend.services.llm import ModelOverloadedError, QuotaExhaustedError
 from backend.services.search import SearchQuotaExhaustedError
 from backend.services import (
-    auth, db, mailer, monitoring, store, tavily_usage, users,
+    auth, db, mailer, monitoring, outreach, store, tavily_usage, users,
 )
 from backend.services.apollo import is_configured as apollo_configured
 from backend.services import hunter
@@ -308,6 +308,43 @@ async def report_json(key: str):
     )
 
 
+@app.post("/outreach/generate")
+async def outreach_generate(request: Request):
+    """Draft an outreach email from a brief's own evidence.
+
+    No new research runs here — the whole point of generating from an
+    existing brief rather than researching again is that the expensive part
+    is already paid for and already sitting in the database.
+    """
+    body = await request.json()
+    share_key = body.get("share_key", "")
+    person_name = body.get("person_name", "")
+    sender_name = body.get("sender_name", "").strip() or "—"
+
+    brief = cache.get_by_key(share_key)
+    if brief is None:
+        raise HTTPException(status_code=404, detail="Report not found or expired")
+
+    owner = (auth.current_user(request) or {}).get("e")
+    result = outreach.draft(brief, person_name, sender_name, share_key, owner=owner)
+    return JSONResponse(content=result, status_code=200 if result.get("ok") else 422)
+
+
+@app.post("/outreach/{draft_id}/send")
+async def outreach_send(draft_id: int, request: Request):
+    """Send a draft. The found/inferred/candidate rule is checked again here,
+    server-side, regardless of what the confirmation dialog on screen showed —
+    a client-side-only restriction is not a restriction."""
+    body = await request.json()
+    result = outreach.send(
+        draft_id,
+        subject=body.get("subject", ""),
+        body_text=body.get("body_text", ""),
+        confirmed_inferred=bool(body.get("confirmed_inferred")),
+    )
+    return JSONResponse(content=result, status_code=200 if result.get("ok") else 422)
+
+
 @app.get("/recent")
 async def recent_scouts():
     """Recently scouted companies, for the home page.
@@ -402,6 +439,7 @@ async def usage_report(request: Request):
         snapshot["tavily"]["authoritative"] = True
 
     snapshot["accounts"] = users.summary()
+    snapshot["activity"] = store.activity_summary()
     snapshot["mail"] = {"configured": mailer.is_configured()}
     return JSONResponse(content=snapshot)
 

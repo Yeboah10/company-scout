@@ -360,6 +360,19 @@
     </div>
     <div id="changelog-backdrop" class="changelog-backdrop hidden"></div>
 
+    <!-- Outreach composer. Generated from the brief's own evidence, never a
+         second research pass. Send behaviour depends on the contact tier:
+         found sends on one click, inferred requires an explicit confirmation
+         checked again server-side, candidate never reaches this modal at all. -->
+    <div id="outreach-panel" class="changelog-panel outreach-panel hidden" role="dialog" aria-label="Draft outreach">
+        <div class="changelog-head">
+            <h3 id="outreach-title">Draft outreach</h3>
+            <button id="outreach-close" class="changelog-close" type="button" aria-label="Close">&times;</button>
+        </div>
+        <div id="outreach-body" class="outreach-body"></div>
+    </div>
+    <div id="outreach-backdrop" class="changelog-backdrop hidden"></div>
+
     <!-- Order matters: core defines the shared helpers, scout owns start-up
          and must run last. -->
     <script src="/static/js/core.js"></script>
@@ -369,6 +382,7 @@
     <script src="/static/js/changelog.js"></script>
     <script src="/static/js/report.js"></script>
     <script src="/static/js/contacts.js"></script>
+    <script src="/static/js/outreach.js"></script>
     <script src="/static/js/scout.js"></script>
 </body>
 </html>
