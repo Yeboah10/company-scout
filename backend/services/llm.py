@@ -32,6 +32,16 @@ class AllModelsExhaustedError(QuotaExhaustedError):
     """Every model in the chain has spent its daily allowance."""
 
 
+class ModelOverloadedError(Exception):
+    """Google's own servers reported every model as overloaded right now.
+
+    Distinct from QuotaExhaustedError on purpose: this is Google's capacity,
+    not our daily allowance, so nothing here is marked as spent, and a retry
+    in a few minutes has a real chance of succeeding — unlike a spent quota,
+    which cannot be waited out no matter how long the wait.
+    """
+
+
 class LLMService:
     def __init__(self, model: str | None = None, fallbacks: list[str] | None = None):
         self.client = genai.Client(api_key=settings.google_api_key)
@@ -77,6 +87,11 @@ class LLMService:
                 # Retrying cannot succeed, and each attempt costs the caller
                 # another wait for nothing.
                 raise
+            except ModelOverloadedError:
+                # Already retried with backoff and rotated through every
+                # model inside _call_with_rate_limit_retry. Retrying again
+                # here would only stack a second wait on top of the first.
+                raise
             except Exception:
                 if attempt < retries:
                     continue
@@ -108,6 +123,11 @@ class LLMService:
         # a fresh model is not a failed attempt, and sharing one budget between
         # them would let a couple of switches consume the retry allowance.
         waits = 0
+        # Overload is tracked separately from exhaustion: a model reporting
+        # high demand has not spent its daily budget, so it must not be
+        # marked exhausted — it is worth trying again once the rest of the
+        # chain has also failed.
+        overloaded: set[str] = set()
         while True:
             try:
                 response = self.client.models.generate_content(
@@ -121,6 +141,54 @@ class LLMService:
                 )
                 usage.record_gemini(model)
                 return response
+            except genai_errors.ServerError as e:
+                # Google's own "this model is currently experiencing high
+                # demand" response — a 5xx, not a 429, and previously not
+                # caught here at all: three identical, immediate retries on
+                # the same overloaded model, then a bare stack trace to the
+                # user. Not a quota problem, so a different model being
+                # overloaded at the exact same instant is unlikely, and
+                # rotating through the chain is tried before waiting at all.
+                overloaded.add(model)
+                candidates = [
+                    m for m in self.chain
+                    if m not in overloaded and not usage.is_exhausted(m)
+                ]
+                if candidates:
+                    nxt = candidates[0]
+                    print(f"       {model} reports high demand; trying {nxt}",
+                          flush=True)
+                    model = nxt
+                    continue
+
+                # Every model in the chain was overloaded on this sweep.
+                # Google's own message says this is temporary, so the whole
+                # chain is worth trying again after a short wait rather than
+                # giving up after one pass.
+                if waits < max_waits:
+                    waits += 1
+                    overloaded.clear()
+                    wait_time = 15 * waits
+                    print(
+                        f"       Every model reports high demand. Waiting "
+                        f"{wait_time}s before trying the chain again...",
+                        flush=True,
+                    )
+                    time.sleep(wait_time)
+                    model = self._next_model()
+                    if model is None:
+                        raise AllModelsExhaustedError(
+                            "Every available Gemini model has spent its "
+                            "daily free-tier allowance."
+                        ) from e
+                    continue
+
+                raise ModelOverloadedError(
+                    "Google's AI service is experiencing high demand across "
+                    "every available model. This is temporary and usually "
+                    "resolves within minutes — the research already "
+                    "completed is saved, so trying again will not repeat it."
+                ) from e
             except genai_errors.ClientError as e:
                 message = str(e)
                 if "429" not in message:

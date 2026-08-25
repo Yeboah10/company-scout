@@ -108,6 +108,7 @@ async function scoutCompany(query) {
         hideLoading();
         if (err.quota) showQuotaExhausted();
         else if (err.searchQuota) showSearchQuotaExhausted();
+        else if (err.modelOverloaded) showModelOverloaded();
         else showError(err.message);
         loadCapacity();
     } finally {
@@ -156,6 +157,11 @@ async function pollUntilDone(jobId) {
             if (job.error_kind === 'search_quota_exhausted') {
                 const e = new Error('SEARCH_QUOTA');
                 e.searchQuota = true;
+                throw e;
+            }
+            if (job.error_kind === 'model_overloaded') {
+                const e = new Error('MODEL_OVERLOADED');
+                e.modelOverloaded = true;
                 throw e;
             }
             throw new Error(job.error || 'Research failed. Please try again.');
@@ -249,6 +255,22 @@ function showSearchQuotaExhausted() {
         + 'Research needs web search, and this month&rsquo;s allowance is spent. '
         + 'It resets at the start of next month. Reports already saved below '
         + 'still open instantly and cost nothing.';
+    el.classList.remove('hidden');
+}
+
+// Google's own capacity, not this project's allowance. Worth saying plainly:
+// unlike a spent quota, this is genuinely worth retrying soon, and the
+// research completed before the failure is checkpointed, so a retry is
+// usually one call rather than the whole run again.
+function showModelOverloaded() {
+    const el = document.getElementById('error');
+    const msg = document.getElementById('error-message');
+    if (!el || !msg) return;
+    msg.innerHTML =
+        '<strong>Google&rsquo;s AI service is briefly overloaded.</strong><br>'
+        + 'This is on their end, not a quota running out, and it usually '
+        + 'clears within minutes. Most of this research already completed and '
+        + 'is saved, so trying the same search again should be quick.';
     el.classList.remove('hidden');
 }
 

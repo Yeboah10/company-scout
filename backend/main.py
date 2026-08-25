@@ -20,7 +20,7 @@ from backend.models.schemas import ScoutRequest, ScoutResponse
 from backend.pipeline.researcher import InsufficientEvidenceError, ResearchPipeline
 from backend.services.cache import BriefCache
 from backend.services.jobs import STAGE_LABELS, TOTAL_STAGES, JobStore
-from backend.services.llm import QuotaExhaustedError
+from backend.services.llm import ModelOverloadedError, QuotaExhaustedError
 from backend.services.search import SearchQuotaExhaustedError
 from backend.services import (
     auth, db, mailer, monitoring, store, tavily_usage, users,
@@ -169,6 +169,23 @@ def _run_job(job_id: str, query: str) -> None:
             job_id,
             status="error",
             error_kind="quota_exhausted",
+            error=str(e),
+        )
+    except ModelOverloadedError as e:
+        # Google's capacity, not ours — the daily allowance is untouched, and
+        # a retry in a few minutes has a real chance of working. Distinct from
+        # quota_exhausted so the page can say so rather than implying a wait
+        # until tomorrow. The pipeline checkpoints before scoring, which is
+        # where this has been observed to happen, so a retry of the same
+        # query is usually one call, not the whole run again.
+        print(f"[scout] Every Gemini model reported high demand for: {query}",
+              flush=True)
+        monitoring.warn("Gemini reported high demand on every model",
+                        query=query)
+        jobs.update(
+            job_id,
+            status="error",
+            error_kind="model_overloaded",
             error=str(e),
         )
     except Exception as e:
