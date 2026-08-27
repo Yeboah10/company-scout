@@ -29,7 +29,10 @@ function contactRank(entry) {
 function canDraftOutreach(entry) {
     if (entry.person.status === 'former') return false;
     if (entry.found && entry.found.kind === 'personal') return true;
-    if (entry.inferred && !(entry.inferred.basis || '').includes('common format')) return true;
+    if (entry.inferred) {
+        const basis = entry.inferred.basis || '';
+        return !basis.includes('common format') && !basis.includes('domain unconfirmed');
+    }
     return false;
 }
 

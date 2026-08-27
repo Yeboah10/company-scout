@@ -21,6 +21,8 @@ import re
 from dataclasses import dataclass, field
 from urllib.parse import urlparse
 
+from backend.services.sources import excluded_domains
+
 # Deliberately conservative: better to miss an address than to invent one out
 # of a string that merely looks like an email.
 _EMAIL = re.compile(
@@ -93,6 +95,12 @@ COMMON_FORMATS = [
 @dataclass
 class ContactReport:
     company_domain: str | None = None
+    # False when `company_domain` itself is a guess (matched from search
+    # results because no official website was confirmed), not just the
+    # pattern applied to it. Every address built on top of an unconfirmed
+    # domain is one guess stacked on another, and that matters more than
+    # which format was used.
+    domain_confirmed: bool = True
     found: list[EmailFinding] = field(default_factory=list)
     pattern: str | None = None
     pattern_basis: list[str] = field(default_factory=list)
@@ -104,13 +112,75 @@ class ContactReport:
     note: str = ""
 
 
-def company_domain(website: str | None, sources: list[str] | None = None) -> str | None:
-    """The company's own domain, which anchors both extraction and inference."""
+# Corporate suffixes stripped before matching a domain against a company
+# name, so "MTN Nigeria Communications PLC" still matches "mtnonline.com" —
+# "communications" and "plc" are not what makes a domain theirs.
+_LEGAL_SUFFIXES = {
+    "plc", "ltd", "limited", "inc", "incorporated", "corp", "corporation",
+    "group", "holdings", "company", "co", "llc", "llp", "communications",
+}
+
+
+def _name_tokens(name: str) -> set[str]:
+    words = re.split(r"[^A-Za-z0-9]+", name or "")
+    return {w.lower() for w in words if len(w) > 2 and w.lower() not in _LEGAL_SUFFIXES}
+
+
+def _domain_matches_name(host: str, name_tokens: set[str]) -> bool:
+    """Whether a domain plausibly belongs to the company, not merely mentions it.
+
+    A news article about the company is not the company's domain, however
+    prominently the company's name appears in its text — only the domain
+    itself is checked here, against the company's own name tokens.
+    """
+    if not name_tokens:
+        return False
+    sld = host.split(".")[0]
+    if sld in name_tokens:
+        return True
+    return any(len(tok) >= 3 and (tok in sld or sld in tok) for tok in name_tokens)
+
+
+def company_domain(
+    website: str | None,
+    sources: list[str] | None = None,
+    company_name: str | None = None,
+) -> str | None:
+    """The company's own domain, which anchors both extraction and inference.
+
+    `website` is the confirmed case: the identification step named an
+    official site. When it didn't — the LLM wasn't confident enough to
+    commit to one from five search results, which happens often for
+    smaller or less web-visible companies — `sources` and `company_name`
+    let a domain still be found by looking at what was already searched,
+    rather than giving up on contact-finding entirely. A candidate is only
+    accepted when the domain itself carries the company's name, not merely
+    a page that mentions the company, and known news/aggregator/social
+    domains are excluded outright so a syndicated article can't be mistaken
+    for the company's own site.
+    """
     if website:
         host = urlparse(website if "://" in website else f"https://{website}").netloc
         host = host.lower().removeprefix("www.")
         if host and "." in host:
             return host
+
+    if sources and company_name:
+        blocked = set(excluded_domains())
+        tokens = _name_tokens(company_name)
+        for url in sources:
+            try:
+                host = urlparse(url if "://" in url else f"https://{url}").netloc
+            except ValueError:
+                continue
+            host = host.lower().removeprefix("www.")
+            if not host or "." not in host:
+                continue
+            if any(b in host for b in blocked):
+                continue
+            if _domain_matches_name(host, tokens):
+                return host
+
     return None
 
 
@@ -266,6 +336,7 @@ def build_report(
     page_texts: list[tuple[str, str]],
     domain: str | None,
     people: list[str],
+    domain_confirmed: bool = True,
 ) -> ContactReport:
     """Assemble found addresses, then infer only where a pattern is evidenced.
 
@@ -273,7 +344,7 @@ def build_report(
     came from — an address without provenance is indistinguishable from a
     guess, which is the exact confusion this module exists to prevent.
     """
-    report = ContactReport(company_domain=domain)
+    report = ContactReport(company_domain=domain, domain_confirmed=domain_confirmed)
 
     seen: dict[str, EmailFinding] = {}
     for url, text in page_texts:
@@ -299,6 +370,16 @@ def build_report(
     report.pattern_basis = basis
     report.pattern_confirmed = confirmed
 
+    # A domain that was itself a guess makes every address built on it a
+    # guess on top of a guess — said once here, then folded into each
+    # entry's basis so the caveat travels wherever a single address is shown
+    # on its own, not only in the report-level note. The exact phrase
+    # "domain unconfirmed" is a deliberate marker: outreach.py checks for it
+    # to keep these out of the "inferred" send tier, the same way it checks
+    # for "common format" — a guessed domain is no more sendable-with-one-
+    # confirmation than a guessed local part is.
+    domain_caveat = "" if domain_confirmed else " — domain unconfirmed, inferred from search results"
+
     if pattern and domain:
         covered = {f.person for f in report.found if f.person}
         for person in people:
@@ -316,20 +397,22 @@ def build_report(
                             if confirmed
                             else "matches the shape of an address this company "
                                  "publishes, but not confirmed against a known name"
-                        ),
+                        ) + domain_caveat,
                     }
                 )
 
     if report.found and report.inferred:
         how = ("observed" if report.pattern_confirmed
                else "apparent, unconfirmed")
+        domain_note = f" {domain} was inferred, not confirmed as the company's site." if not domain_confirmed else ""
         report.note = (
             f"{len(report.found)} address(es) published publicly. "
             f"{len(report.inferred)} inferred from the {how} "
-            f"{pattern}@{domain} pattern — unverified."
+            f"{pattern}@{domain} pattern — unverified.{domain_note}"
         )
     elif report.found:
-        report.note = f"{len(report.found)} address(es) published publicly."
+        domain_note = f" (at {domain}, inferred rather than confirmed as the company's own site)" if not domain_confirmed else ""
+        report.note = f"{len(report.found)} address(es) published publicly{domain_note}."
     elif domain:
         # Nothing published and no pattern to extrapolate. Rather than stop
         # here, offer the formats companies most commonly use — explicitly as
@@ -348,17 +431,23 @@ def build_report(
                             "person": person,
                             "email": guess,
                             "pattern": fmt,
-                            "basis": f"common format — {prevalence}",
+                            "basis": f"common format — {prevalence}" + domain_caveat,
                         }
                     )
 
         if report.inferred:
+            domain_note = (
+                f" The domain itself ({domain}) was also inferred from search "
+                "results rather than confirmed as the company's own site, so "
+                "verify the domain as well as the name before using any of these."
+                if not domain_confirmed else ""
+            )
             report.note = (
                 "No addresses were published anywhere findable, and none were "
                 "available to establish this company's format. The addresses "
                 "below are the formats companies most commonly use, applied to "
                 "the names found — untested guesses, not derived from this "
-                "company. Verify before sending anything that matters."
+                f"company. Verify before sending anything that matters.{domain_note}"
             )
         else:
             report.note = (

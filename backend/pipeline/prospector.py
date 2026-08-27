@@ -240,9 +240,27 @@ class Prospector:
         return profiles
 
     def find_contacts(
-        self, company: CompanyIdentity, people: list[Person]
+        self, company: CompanyIdentity, people: list[Person],
+        source_urls: list[str] | None = None,
     ) -> ContactInfo:
         domain = company_domain(company.website)
+        domain_confirmed = domain is not None
+
+        if not domain and source_urls:
+            # The identification step sometimes comes back with no confirmed
+            # website — often for smaller or less web-visible companies — but
+            # the search results gathered along the way frequently contain
+            # the real site anyway. Rather than give up on every email route
+            # at that point, fall back to a domain matched from those results
+            # and say plainly, everywhere it's used, that it wasn't confirmed.
+            domain = company_domain(None, sources=source_urls, company_name=company.name)
+            if domain:
+                print(
+                    f"       > No confirmed website; using {domain} as a likely "
+                    "domain, matched from search results",
+                    flush=True,
+                )
+
         if not domain:
             # No domain means no email work is possible, but LinkedIn does not
             # depend on one and is often the only route that exists.
@@ -295,7 +313,7 @@ class Prospector:
         current = [p for p in people if p.name and p.status != RoleStatus.FORMER]
         departed = [p for p in people if p.name and p.status == RoleStatus.FORMER]
         names = [p.name for p in current]
-        report = build_report(pages, domain, names)
+        report = build_report(pages, domain, names, domain_confirmed=domain_confirmed)
 
         # Hunter is far more productive than reading public pages — most
         # companies publish a contact form rather than an address — but the
@@ -384,12 +402,19 @@ class Prospector:
                     continue
                 guess = apply_pattern(hunter_pattern, domain, name)
                 if guess and guess not in known:
+                    basis = "observed at this company"
+                    if not domain_confirmed:
+                        # Same caveat as build_report() applies elsewhere,
+                        # and outreach.py's tier check looks for this exact
+                        # phrase — a guessed domain stays candidate-tier
+                        # regardless of which stage produced the pattern.
+                        basis += " — domain unconfirmed, inferred from search results"
                     report.inferred.append(
                         {
                             "person": name,
                             "email": guess,
                             "pattern": hunter_pattern,
-                            "basis": "observed at this company",
+                            "basis": basis,
                         }
                     )
             report.note = (

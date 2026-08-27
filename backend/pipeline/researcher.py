@@ -98,7 +98,8 @@ class ResearchPipeline:
         try:
             report(6, "Finding contact details...")
             contacts = self.prospector.find_contacts(
-                evidence.company, evidence.people
+                evidence.company, evidence.people,
+                source_urls=[r.url for r in evidence.raw_search_results],
             )
         except Exception as e:
             print(f"       ! Contact lookup failed: {e}", flush=True)
@@ -250,7 +251,9 @@ class ResearchPipeline:
         contacts = None
         try:
             report(6, "Finding contact details...")
-            contacts = self.prospector.find_contacts(company, people)
+            contacts = self.prospector.find_contacts(
+                company, people, source_urls=[r.url for r in all_results]
+            )
             print(
                 f"       > {len(contacts.found)} published, "
                 f"{len(contacts.inferred)} inferred",

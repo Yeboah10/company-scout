@@ -121,8 +121,14 @@ def _find_contact(brief: CompanyBrief, person_name: str) -> tuple[str, str] | No
     if inferred:
         # An inferred address built from a generic format rather than a
         # pattern observed at this company is a candidate, not a genuine
-        # inference, whatever list it happens to sit in.
-        tier = "candidate" if "common format" in (inferred.basis or "") else "inferred"
+        # inference, whatever list it happens to sit in — and so is one
+        # built on a domain that was itself a guess (see contacts.py's
+        # "domain unconfirmed" marker): guessing which company website is
+        # theirs is not a weaker kind of evidence than guessing the local
+        # part, it's the same kind, and stacking both should never read as
+        # more confident than either alone.
+        basis = inferred.basis or ""
+        tier = "candidate" if ("common format" in basis or "domain unconfirmed" in basis) else "inferred"
         return inferred.email, tier
 
     return None
