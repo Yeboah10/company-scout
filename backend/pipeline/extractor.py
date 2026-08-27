@@ -199,6 +199,19 @@ class EvidenceExtractor:
 
         claims = []
         for c in data.get("claims", []):
+            statement = c.get("statement")
+            if not statement:
+                # The model occasionally drops this field on one entry inside
+                # an otherwise-good batch. That used to raise a KeyError which
+                # discarded the whole batch's claims AND people (the enclosing
+                # try/except in extract() catches it, but only after every
+                # good entry already parsed is thrown away with the bad one).
+                # Skip just this claim instead.
+                monitoring.warn(
+                    "extraction: claim missing 'statement', skipped",
+                    company=company.name,
+                )
+                continue
             source = Source(
                 url=c.get("source_url", ""),
                 title=c.get("source_title", ""),
@@ -207,7 +220,7 @@ class EvidenceExtractor:
             )
             claims.append(
                 Claim(
-                    statement=c["statement"],
+                    statement=statement,
                     claim_type=c.get("claim_type", "other"),
                     source=source,
                     confidence=Confidence(c.get("confidence", "medium")),
@@ -217,6 +230,14 @@ class EvidenceExtractor:
 
         people = []
         for p in data.get("people", []):
+            name = p.get("name")
+            if not name:
+                # Same reasoning as above: skip this one entry, keep the rest.
+                monitoring.warn(
+                    "extraction: person missing 'name', skipped",
+                    company=company.name,
+                )
+                continue
             source = Source(
                 url=p.get("source_url", ""),
                 title=p.get("source_title", ""),
@@ -224,7 +245,7 @@ class EvidenceExtractor:
             )
             people.append(
                 Person(
-                    name=p["name"],
+                    name=name,
                     role=p.get("role", "Unknown"),
                     relationship=p.get("relationship", "executive"),
                     source=source,
