@@ -253,7 +253,10 @@ class Prospector:
             # the real site anyway. Rather than give up on every email route
             # at that point, fall back to a domain matched from those results
             # and say plainly, everywhere it's used, that it wasn't confirmed.
-            domain = company_domain(None, sources=source_urls, company_name=company.name)
+            domain = company_domain(
+                None, sources=source_urls, company_name=company.name,
+                company_country=company.country,
+            )
             if domain:
                 print(
                     f"       > No confirmed website; using {domain} as a likely "

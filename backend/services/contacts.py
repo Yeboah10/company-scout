@@ -126,6 +126,49 @@ def _name_tokens(name: str) -> set[str]:
     return {w.lower() for w in words if len(w) > 2 and w.lower() not in _LEGAL_SUFFIXES}
 
 
+# A handful of ccTLDs distinctive enough to signal a specific country. Not
+# exhaustive — it exists only to catch the failure this was built for: two
+# unrelated companies sharing a brand name in different countries. ReelFruit
+# Nigeria (reelfruit.com) shares its exact name with reelfruit.ca (Canada)
+# and reelfruit.co.za (South Africa); picking whichever came first in the
+# search results would guess a real company's domain, just the wrong one.
+# Deliberately narrow rather than a full ccTLD table: a false "no conflict"
+# here just leaves the existing name-token check as the only guard, same as
+# before this existed, so an incomplete list costs nothing.
+_CCTLD_COUNTRY = {
+    "ca": "canada", "co.za": "south africa", "za": "south africa",
+    "co.uk": "united kingdom", "com.au": "australia", "au": "australia",
+    "de": "germany", "fr": "france", "it": "italy", "es": "spain",
+    "com.br": "brazil", "co.in": "india", "in": "india",
+    "com.my": "malaysia", "sg": "singapore", "nl": "netherlands",
+    "co.jp": "japan", "cn": "china", "ru": "russia", "co.kr": "south korea",
+}
+
+
+def _tld_country(host: str) -> str | None:
+    """The country a domain's ccTLD names, if it's one of the recognised ones."""
+    labels = host.split(".")
+    for n in (2, 1):
+        if len(labels) > n:
+            claimed = _CCTLD_COUNTRY.get(".".join(labels[-n:]))
+            if claimed:
+                return claimed
+    return None
+
+
+def _tld_conflicts_with_country(host: str, company_country: str | None) -> bool:
+    """Whether a domain's ccTLD names a country the company isn't in.
+
+    Only fires when both the TLD and the company's country are known and
+    they plainly disagree — a `.com`/`.org`/unrecognised TLD never conflicts,
+    since most companies everywhere use them regardless of where they are.
+    """
+    if not company_country:
+        return False
+    claimed = _tld_country(host)
+    return claimed is not None and claimed not in company_country.lower()
+
+
 def _domain_matches_name(host: str, name_tokens: set[str]) -> bool:
     """Whether a domain plausibly belongs to the company, not merely mentions it.
 
@@ -145,6 +188,7 @@ def company_domain(
     website: str | None,
     sources: list[str] | None = None,
     company_name: str | None = None,
+    company_country: str | None = None,
 ) -> str | None:
     """The company's own domain, which anchors both extraction and inference.
 
@@ -158,6 +202,13 @@ def company_domain(
     a page that mentions the company, and known news/aggregator/social
     domains are excluded outright so a syndicated article can't be mistaken
     for the company's own site.
+
+    `company_country`, when known, rules out a same-named company in the
+    wrong place: ReelFruit Nigeria (reelfruit.com) shares its exact name
+    with reelfruit.ca (Canada) and reelfruit.co.za (South Africa), both of
+    which pass the name check just as cleanly as the real one. Without a
+    country check, whichever happened to rank first in search results wins
+    — a different real company's domain, guessed with total confidence.
     """
     if website:
         host = urlparse(website if "://" in website else f"https://{website}").netloc
@@ -168,6 +219,7 @@ def company_domain(
     if sources and company_name:
         blocked = set(excluded_domains())
         tokens = _name_tokens(company_name)
+        candidates = []
         for url in sources:
             try:
                 host = urlparse(url if "://" in url else f"https://{url}").netloc
@@ -178,8 +230,27 @@ def company_domain(
                 continue
             if any(b in host for b in blocked):
                 continue
-            if _domain_matches_name(host, tokens):
-                return host
+            if not _domain_matches_name(host, tokens):
+                continue
+            if _tld_conflicts_with_country(host, company_country):
+                continue
+            candidates.append(host)
+
+        if candidates:
+            # A ccTLD that explicitly confirms the company's own country
+            # outranks even .com — it's stronger evidence than the generic
+            # default, not weaker. Failing that, .com is the safer bet over
+            # an unrecognised TLD, which is more likely to belong to some
+            # other, unrelated same-named company.
+            def rank(h: str) -> int:
+                tld_country = _tld_country(h)
+                if company_country and tld_country and tld_country in company_country.lower():
+                    return 0
+                if h.endswith(".com"):
+                    return 1
+                return 2
+            candidates.sort(key=rank)
+            return candidates[0]
 
     return None
 
