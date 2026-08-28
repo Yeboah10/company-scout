@@ -4,6 +4,9 @@
 
 let currentBrief = null;
 let currentShareKey = null;
+// The exact text last searched, kept so a "Run again" can repeat it without
+// asking the user to retype the company name.
+let currentQuery = null;
 function scoreColor(score) {
     if (score >= 8) return 'var(--green)';
     if (score >= 6) return 'var(--blue)';

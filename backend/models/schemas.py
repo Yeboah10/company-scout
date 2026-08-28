@@ -402,6 +402,12 @@ class CompanyBrief(BaseModel):
 
 class ScoutRequest(BaseModel):
     query: str = Field(description="Company name or website URL", min_length=1, max_length=200)
+    # A company already scouted once is served from the saved report forever
+    # by default -- that's the point of the cache. This opts out of it for
+    # one request: skip the saved answer, run the pipeline fresh, and save
+    # the new result over it. Meant for "the tool changed since I last
+    # scouted this one," not for routine re-checking.
+    force_refresh: bool = False
 
 
 class ScoutResponse(BaseModel):

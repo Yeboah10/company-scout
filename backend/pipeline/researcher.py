@@ -118,12 +118,19 @@ class ResearchPipeline:
         query: str,
         use_cache: bool = True,
         progress: Callable[[int, str], None] | None = None,
+        force: bool = False,
     ) -> CompanyBrief:
         """Research a company end to end.
 
         `progress`, when given, is called as each stage begins so a caller
         polling from outside can report real progress rather than guessing
         from a timer.
+
+        `force` skips reading the cache and the saved brief (a fresh run,
+        useful when the pipeline itself has changed since the last one) but
+        still writes the new result at the end via `use_cache` — a forced
+        run that then failed to save would burn quota for nothing, and the
+        next search would just serve the same stale answer again.
         """
         start = time.time()
 
@@ -132,7 +139,7 @@ class ResearchPipeline:
             if progress is not None:
                 progress(stage, message)
 
-        if use_cache:
+        if use_cache and not force:
             cached = self.cache.get(query)
             if cached is not None:
                 print(f"[cache] Serving cached brief for: {query}", flush=True)

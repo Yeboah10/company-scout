@@ -55,10 +55,11 @@ document.getElementById('search-form').addEventListener('submit', async (e) => {
     await scoutCompany(query);
 });
 
-async function scoutCompany(query) {
+async function scoutCompany(query, { force = false } = {}) {
     showLoading();
     hideError();
     hideResults();
+    currentQuery = query;
 
     const btn = document.getElementById('scout-btn');
     btn.disabled = true;
@@ -78,7 +79,7 @@ async function scoutCompany(query) {
         const started = await fetch('/scout', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ query })
+            body: JSON.stringify({ query, force_refresh: force })
         });
 
         if (!started.ok) {
@@ -205,6 +206,26 @@ async function copyShareLink() {
 function downloadMarkdown() {
     if (!currentShareKey) return;
     window.location.href = `/report/${currentShareKey}.md`;
+}
+
+// Runs the currently-open company again from scratch, ignoring the saved
+// report — for when the pipeline has changed since it was last scouted, not
+// for routine re-checking (it spends the same quota a first-time scout does).
+async function rescoutCurrent() {
+    // The exact text originally searched, when this report came from that
+    // search in this browser session; falling back to the resolved company
+    // name covers a report opened straight from a share link instead, where
+    // the original search text was never seen by this page.
+    const query = currentQuery || currentBrief?.evidence?.company?.name;
+    if (!query) return;
+
+    const confirmed = window.confirm(
+        `Re-scout "${query}" from scratch? This replaces the saved report with a `
+        + `fresh one and uses real search and AI quota, the same as a first-time scout.`
+    );
+    if (!confirmed) return;
+
+    await scoutCompany(query, { force: true });
 }
 /* ---------- Daily capacity ---------- */
 
@@ -341,6 +362,11 @@ async function loadSharedReport() {
         const data = await response.json();
         currentBrief = data.brief;
         currentShareKey = data.share_key || match[1];
+        // Re-scout has no original search text to work from here, so it
+        // falls back to the resolved company name -- close enough to
+        // re-identify the same company, though the resulting share link
+        // may differ from this one if the two don't normalise the same way.
+        currentQuery = data.brief?.evidence?.company?.name || null;
         renderBrief(data.brief);
         hideLoading();
         showResults();

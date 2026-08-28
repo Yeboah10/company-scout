@@ -125,7 +125,7 @@ usage.attach_store(cache.backend)
 store.ensure_schema()
 
 
-def _run_job(job_id: str, query: str) -> None:
+def _run_job(job_id: str, query: str, force: bool = False) -> None:
     """Run a scout to completion, recording progress against the job.
 
     Runs on a worker thread, so nothing here may raise into the caller: every
@@ -136,7 +136,7 @@ def _run_job(job_id: str, query: str) -> None:
 
     try:
         pipeline = ResearchPipeline()
-        pipeline.research(query, progress=progress)
+        pipeline.research(query, progress=progress, force=force)
         jobs.update(
             job_id,
             status="done",
@@ -211,8 +211,9 @@ async def scout_company(request: ScoutRequest, http_request: Request):
 
     # Serve cache hits before rate limiting: they cost no API quota, so there
     # is nothing to protect against, and counting them would punish the exact
-    # behaviour we want to encourage.
-    cached = cache.get(query)
+    # behaviour we want to encourage. force_refresh explicitly asks to skip
+    # this — the saved report is exactly what the caller wants to replace.
+    cached = None if request.force_refresh else cache.get(query)
     if cached is not None:
         return JSONResponse(
             content={
@@ -226,13 +227,15 @@ async def scout_company(request: ScoutRequest, http_request: Request):
             }
         )
 
+    # A forced re-run spends real quota the same as any other fresh scout,
+    # so it counts against the same rate limit rather than bypassing it.
     _check_rate_limit(http_request.client.host if http_request.client else "unknown")
 
     # A scout takes minutes, and the proxy in front of this app abandons any
     # request left unanswered for ~100 seconds. So hand back a job to poll
     # rather than holding the connection open and losing it.
     job = jobs.create(query, share_key=share_key)
-    executor.submit(_run_job, job.id, query)
+    executor.submit(_run_job, job.id, query, force=request.force_refresh)
 
     return JSONResponse(status_code=202, content={"status": "running", **job.as_dict()})
 
