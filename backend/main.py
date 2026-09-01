@@ -84,7 +84,20 @@ async def require_sign_in(request: Request, call_next):
             return JSONResponse({"detail": "Sign in required"}, status_code=401)
         return RedirectResponse(f"/login?next={quote(path)}", status_code=303)
 
-    return await call_next(request)
+    response = await call_next(request)
+
+    # The app shell and every static asset are served with no Cache-Control
+    # at all otherwise, so a browser's own heuristic decides how long to
+    # trust an old copy without even asking the server first. That has
+    # already cost two rounds of "I can't find the button" after a real
+    # deploy (outreach, then re-scout) that turned out to be a stale local
+    # copy, not a missed push. `no-cache` still lets the browser reuse its
+    # copy on a 304 when nothing changed -- it just has to ask each time
+    # rather than assume.
+    if path == "/" or path.startswith(("/static/", "/r/")):
+        response.headers["Cache-Control"] = "no-cache"
+
+    return response
 
 # The Gemini free tier caps out at 20 requests/day total, so a handful of
 # visitors can exhaust it. This limits any single visitor to a few runs
