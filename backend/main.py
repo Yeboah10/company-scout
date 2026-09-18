@@ -23,7 +23,8 @@ from backend.services.jobs import STAGE_LABELS, TOTAL_STAGES, JobStore
 from backend.services.llm import ModelOverloadedError, QuotaExhaustedError
 from backend.services.search import SearchQuotaExhaustedError
 from backend.services import (
-    auth, db, mailer, monitoring, outreach, store, tavily_usage, users,
+    auth, db, mailer, monitoring, notes, outreach, password_reset,
+    pdf_export, store, tavily_usage, users,
 )
 from backend.services.apollo import is_configured as apollo_configured
 from backend.services import hunter
@@ -59,10 +60,11 @@ executor = ThreadPoolExecutor(max_workers=2)
 # security (the token is the real secret either way) and would break the
 # "open the link with ?key= once" flow that page was built around, along
 # with any server-side check of it that has no browser session to carry.
-PUBLIC_PREFIXES = ("/static/", "/r/", "/report/")
+PUBLIC_PREFIXES = ("/static/", "/r/", "/report/", "/compare")
 PUBLIC_PATHS = {
     "/login", "/signup", "/logout", "/health", "/about", "/favicon.ico",
-    "/usage", "/usage-page",
+    "/usage", "/usage-page", "/forgot-password", "/reset-password",
+    "/use-cases",
 }
 
 
@@ -309,6 +311,25 @@ async def report_markdown(key: str):
     )
 
 
+@app.get("/report/{key}.pdf")
+async def report_pdf(key: str):
+    brief = cache.get_by_key(key)
+    if brief is None and store.is_enabled():
+        brief = store.load_by_key(key)
+    if brief is None:
+        raise HTTPException(status_code=404, detail="Report not found or expired")
+
+    html = pdf_export.brief_to_print_html(brief, share_key=key)
+    name = brief.evidence.company.name.lower().replace(" ", "_")
+    return PlainTextResponse(
+        content=html,
+        media_type="text/html; charset=utf-8",
+        headers={
+            "Content-Disposition": f'inline; filename="scout_{name}.html"'
+        },
+    )
+
+
 @app.get("/report/{key}")
 async def report_json(key: str):
     brief = cache.get_by_key(key)
@@ -359,6 +380,61 @@ async def outreach_send(draft_id: int, request: Request):
         confirmed_inferred=bool(body.get("confirmed_inferred")),
     )
     return JSONResponse(content=result, status_code=200 if result.get("ok") else 422)
+
+
+@app.get("/notes/{share_key}")
+async def get_notes(share_key: str, request: Request):
+    user = auth.current_user(request)
+    if not user:
+        return JSONResponse({"notes": []})
+    return JSONResponse({"notes": notes.list_for(share_key)})
+
+
+@app.post("/notes/{share_key}")
+async def add_note(share_key: str, request: Request):
+    user = auth.current_user(request)
+    if not user:
+        raise HTTPException(status_code=401, detail="Sign in required")
+    body = await request.json()
+    text = (body.get("body") or "").strip()
+    if not text:
+        raise HTTPException(status_code=400, detail="Note cannot be empty")
+    result = notes.add(share_key, user["e"], text)
+    if not result:
+        raise HTTPException(status_code=500, detail="Could not save note")
+    return JSONResponse(result, status_code=201)
+
+
+@app.delete("/notes/{note_id}")
+async def delete_note(note_id: int, request: Request):
+    user = auth.current_user(request)
+    if not user:
+        raise HTTPException(status_code=401, detail="Sign in required")
+    if notes.delete(note_id, user["e"]):
+        return JSONResponse({"ok": True})
+    raise HTTPException(status_code=404, detail="Note not found or not yours")
+
+
+@app.get("/compare")
+async def compare_page():
+    return FileResponse(str(FRONTEND_DIR / "index.html"))
+
+
+@app.get("/compare-data")
+async def compare_data(a: str = "", b: str = ""):
+    """Load two briefs for side-by-side comparison. Zero LLM cost."""
+    if not a or not b:
+        raise HTTPException(status_code=400, detail="Two share keys required (?a=KEY1&b=KEY2)")
+    brief_a = cache.get_by_key(a) or (store.load_by_key(a) if store.is_enabled() else None)
+    brief_b = cache.get_by_key(b) or (store.load_by_key(b) if store.is_enabled() else None)
+    if not brief_a:
+        raise HTTPException(status_code=404, detail=f"Report {a} not found")
+    if not brief_b:
+        raise HTTPException(status_code=404, detail=f"Report {b} not found")
+    return JSONResponse({
+        "a": ScoutResponse(brief=brief_a, duration_seconds=brief_a.duration_seconds, share_key=a).model_dump(mode="json"),
+        "b": ScoutResponse(brief=brief_b, duration_seconds=brief_b.duration_seconds, share_key=b).model_dump(mode="json"),
+    })
 
 
 @app.get("/recent")
@@ -530,6 +606,60 @@ async def signup_submit(
         secure=True,
     )
     return response
+
+
+@app.get("/forgot-password")
+async def forgot_password_page():
+    return FileResponse(str(FRONTEND_DIR / "forgot-password.html"))
+
+
+@app.post("/forgot-password")
+async def forgot_password_submit(request: Request):
+    body = await request.json()
+    email = (body.get("email") or "").strip().lower()
+
+    if not email:
+        return JSONResponse({"ok": False, "message": "Enter your email address."})
+
+    if users.exists(email):
+        token = password_reset.issue(email)
+        scheme = request.headers.get("x-forwarded-proto", "https")
+        host = request.headers.get("host", "scout.yeboah.works")
+        reset_url = f"{scheme}://{host}/reset-password?token={token}"
+        mailer.send_reset(email, reset_url)
+
+    return JSONResponse({
+        "ok": True,
+        "message": "If an account with that email exists, a reset link has been sent. Check your inbox.",
+    })
+
+
+@app.get("/reset-password")
+async def reset_password_page():
+    return FileResponse(str(FRONTEND_DIR / "reset-password.html"))
+
+
+@app.post("/reset-password")
+async def reset_password_submit(request: Request):
+    body = await request.json()
+    token = body.get("token", "")
+    new_password = body.get("password", "")
+
+    email = password_reset.verify(token)
+    if not email:
+        return JSONResponse({"ok": False, "expired": True,
+                             "message": "This reset link has expired or is not valid."})
+
+    ok, message = users.update_password(email, new_password)
+    if not ok:
+        return JSONResponse({"ok": False, "message": message})
+
+    return JSONResponse({"ok": True})
+
+
+@app.get("/use-cases")
+async def use_cases_page():
+    return FileResponse(str(FRONTEND_DIR / "use-cases.html"))
 
 
 @app.post("/logout")

@@ -127,6 +127,47 @@ def verify(email: str, password: str) -> bool:
         return False
 
 
+def update_password(email: str, new_password: str) -> tuple[bool, str]:
+    """Change a user's password. Returns (ok, message)."""
+    email = normalise_email(email)
+    if not email:
+        return False, "Invalid email."
+    if len(new_password) < 8:
+        return False, "Password must be at least 8 characters."
+    if not ensure_schema():
+        return False, "The database is unreachable."
+
+    try:
+        with connect() as conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT 1 FROM users WHERE email = %s", (email,))
+                if not cur.fetchone():
+                    return False, "No account with that email."
+                cur.execute(
+                    "UPDATE users SET password_hash = %s WHERE email = %s",
+                    (_hash(new_password), email),
+                )
+            conn.commit()
+        return True, "ok"
+    except Exception as e:
+        print(f"[users] Password update failed: {e}", flush=True)
+        return False, "Could not update the password. Please try again."
+
+
+def exists(email: str) -> bool:
+    """Whether an account with this email exists."""
+    email = normalise_email(email)
+    if not email or not ensure_schema():
+        return False
+    try:
+        with connect() as conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT 1 FROM users WHERE email = %s", (email,))
+                return cur.fetchone() is not None
+    except Exception:
+        return False
+
+
 def summary(limit: int = 10) -> dict:
     """Account count and the most recent signups, for the admin usage page.
 

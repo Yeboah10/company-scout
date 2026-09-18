@@ -1955,6 +1955,15 @@ body {
     border-left: 3px solid var(--accent);
 }
 
+.login-success {
+    margin-top: 16px;
+    padding: 10px 12px;
+    font-size: 13px;
+    color: var(--green);
+    background: var(--raised);
+    border-left: 3px solid var(--green);
+}
+
 .login-note {
     margin-top: 28px;
     padding-top: 16px;
@@ -2685,3 +2694,218 @@ body {
 .outreach-draft-btn:hover {
     color: var(--accent-hover);
 }
+
+/* ---------- Team notes ---------- */
+
+.note-card {
+    position: relative;
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--rule);
+}
+
+.note-meta {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 4px;
+    font-size: 11px;
+    color: var(--ink-45);
+}
+
+.note-author { font-weight: 600; }
+
+.note-body {
+    font-size: 14px;
+    line-height: 1.5;
+    white-space: pre-wrap;
+}
+
+.note-delete {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: none;
+    border: none;
+    color: var(--ink-45);
+    cursor: pointer;
+    font-size: 16px;
+    padding: 2px 6px;
+}
+
+.note-delete:hover { color: var(--accent); }
+
+.notes-empty {
+    padding: 16px 0;
+    font-size: 13px;
+    color: var(--ink-45);
+}
+
+.note-form {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid var(--rule);
+}
+
+.note-textarea {
+    width: 100%;
+    padding: 10px 12px;
+    font-family: "Archivo", system-ui, sans-serif;
+    font-size: 14px;
+    color: var(--ink);
+    background: var(--raised);
+    border: 2px solid var(--rule);
+    resize: vertical;
+    min-height: 60px;
+}
+
+.note-textarea:focus {
+    border-color: var(--accent);
+    outline: none;
+}
+
+.note-submit {
+    margin-top: 8px;
+    padding: 8px 16px;
+    font-family: "Archivo", system-ui, sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--on-accent);
+    background: var(--accent-fill);
+    border: none;
+    cursor: pointer;
+}
+
+.note-submit:hover { background: var(--accent-hover); }
+
+/* ---------- Comparison view ---------- */
+
+.compare-view {
+    padding: 24px 16px;
+}
+
+.compare-header {
+    margin-bottom: 24px;
+}
+
+.compare-header h2 {
+    font-size: 24px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+}
+
+.compare-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+}
+
+@media (max-width: 700px) {
+    .compare-grid { grid-template-columns: 1fr; }
+}
+
+.compare-column {
+    border: 2px solid var(--rule);
+    padding: 20px;
+}
+
+.compare-company {
+    margin-bottom: 16px;
+}
+
+.compare-company h3 {
+    font-size: 20px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+}
+
+.compare-country {
+    font-size: 12px;
+    color: var(--ink-45);
+    margin-right: 8px;
+}
+
+.compare-scores {
+    margin-bottom: 16px;
+    padding: 12px 0;
+    border-top: 1px solid var(--rule);
+    border-bottom: 1px solid var(--rule);
+}
+
+.compare-score-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 4px 0;
+    font-size: 13px;
+}
+
+.compare-score-label { color: var(--ink-45); }
+.compare-score-value { font-weight: 700; font-variant-numeric: tabular-nums; }
+
+.compare-score-overall {
+    margin-top: 6px;
+    padding-top: 8px;
+    border-top: 1px solid var(--rule);
+    font-size: 14px;
+}
+
+.compare-summary {
+    margin-bottom: 16px;
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--ink-75);
+}
+
+.compare-signals,
+.compare-gaps {
+    margin-bottom: 12px;
+}
+
+.compare-signals h4,
+.compare-gaps h4 {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-45);
+    margin-bottom: 6px;
+}
+
+.compare-signal,
+.compare-gap {
+    font-size: 13px;
+    line-height: 1.4;
+    padding: 4px 0;
+    border-bottom: 1px solid var(--rule-soft);
+}
+
+.compare-open {
+    display: inline-block;
+    margin-top: 12px;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--accent-text);
+    text-decoration: none;
+}
+
+.compare-open:hover { color: var(--accent-hover); }
+
+.compare-footer {
+    margin-top: 24px;
+    padding-top: 16px;
+    border-top: 1px solid var(--rule);
+}
+
+/* ---------- Use cases CTA ---------- */
+
+.cta-section {
+    text-align: center;
+    padding: 32px 0;
+}
+
+.cta-link {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--accent-text);
+    text-decoration: none;
+}
+
+.cta-link:hover { color: var(--accent-hover); }

@@ -68,6 +68,13 @@
                             <small>What it does, and what it won&rsquo;t tell you</small>
                         </span>
                     </a>
+                    <a class="options-item" role="menuitem" href="/use-cases">
+                        <span class="options-icon">&#9733;</span>
+                        <span>
+                            Use cases
+                            <small>Who it&rsquo;s for and how they use it</small>
+                        </span>
+                    </a>
                     <button class="options-item" role="menuitem" type="button" id="menu-theme">
                         <span class="options-icon">&#9788;</span>
                         <span id="menu-theme-label">Switch theme</span>
@@ -225,6 +232,7 @@
                 <button class="tab" data-tab="contacts">People</button>
                 <button class="tab" data-tab="evidence">Evidence</button>
                 <button class="tab" data-tab="sources">Sources</button>
+                <button class="tab" data-tab="notes">Notes</button>
             </div>
 
             <!-- Tab Panels -->
@@ -334,12 +342,26 @@
                 </div>
             </div>
 
+            <!-- Team notes -->
+            <div id="tab-notes" class="tab-panel">
+                <div class="section">
+                    <h3>Team notes</h3>
+                    <p class="section-subtitle">Private notes on this company. Only visible to signed-in users.</p>
+                    <div id="notes-list"></div>
+                    <div class="note-form">
+                        <textarea id="note-input" class="note-textarea" rows="3" placeholder="Add a note about this company..."></textarea>
+                        <button class="note-submit" onclick="submitNote()">Add note</button>
+                    </div>
+                </div>
+            </div>
+
             <!-- Footer -->
             <div class="result-footer">
                 <span id="duration"></span>
                 <div class="footer-actions">
                     <button class="download-btn" onclick="copyShareLink()" id="share-btn">Copy link</button>
                     <button class="download-btn" onclick="downloadMarkdown()">Download report</button>
+                    <button class="download-btn" onclick="exportPDF()">Export summary</button>
                     <button class="download-btn" onclick="window.print()">Print / PDF</button>
                     <button class="download-btn" onclick="rescoutCurrent()" id="rescout-btn"
                             title="Runs this company again from scratch instead of showing the saved report — uses a fresh search and AI pass, same as scouting it for the first time.">
@@ -348,6 +370,10 @@
                 </div>
             </div>
         </div>
+
+        <!-- Comparison view: two briefs side by side. Populated by compare.js
+             when the URL is /compare?a=KEY1&b=KEY2. -->
+        <div id="compare-view" class="compare-view hidden"></div>
     </div>
 
     <!-- Version / changelog -->
@@ -387,6 +413,8 @@
     <script src="/static/js/report.js"></script>
     <script src="/static/js/contacts.js"></script>
     <script src="/static/js/outreach.js"></script>
+    <script src="/static/js/notes.js"></script>
+    <script src="/static/js/compare.js"></script>
     <script src="/static/js/scout.js"></script>
 </body>
 </html>

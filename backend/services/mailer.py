@@ -94,6 +94,35 @@ def send_welcome(to_email: str) -> bool:
     return _send(to_email, WELCOME_SUBJECT, html=WELCOME_HTML, label="welcome email")
 
 
+RESET_SUBJECT = "Reset your Company Scout password"
+
+RESET_HTML = """\
+<div style="font-family:Georgia,'Times New Roman',serif;max-width:520px;
+            margin:0 auto;color:#201e1d;line-height:1.6">
+  <p style="font:800 20px/1 Archivo,Arial,sans-serif;letter-spacing:-0.02em;
+            margin:0 0 24px">Company Scout</p>
+  <p>Someone requested a password reset for this email address. If that
+     was you, click the link below. If not, ignore this email &mdash; nothing
+     will change.</p>
+  <p style="margin-top:28px">
+    <a href="{reset_url}" style="background:#d84a28;color:#fff;
+       padding:12px 20px;text-decoration:none;font-weight:700;
+       font-family:Archivo,Arial,sans-serif;display:inline-block">
+      Reset password
+    </a>
+  </p>
+  <p style="margin-top:24px;font-size:13px;color:#605d5d">
+    This link expires in one hour.
+  </p>
+</div>
+"""
+
+
+def send_reset(to_email: str, reset_url: str) -> bool:
+    html = RESET_HTML.replace("{reset_url}", reset_url)
+    return _send(to_email, RESET_SUBJECT, html=html, label="password reset")
+
+
 def send_raw(to_email: str, subject: str, body: str) -> bool:
     """A plain-text send — outreach, not a templated notification.
 
