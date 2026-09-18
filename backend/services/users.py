@@ -128,7 +128,11 @@ def verify(email: str, password: str) -> bool:
 
 
 def update_password(email: str, new_password: str) -> tuple[bool, str]:
-    """Change a user's password. Returns (ok, message)."""
+    """Change a user's password. Returns (ok, message).
+
+    If the email belongs to the env-based admin and has no database row yet,
+    one is created so the new password takes effect on future logins.
+    """
     email = normalise_email(email)
     if not email:
         return False, "Invalid email."
@@ -141,12 +145,20 @@ def update_password(email: str, new_password: str) -> tuple[bool, str]:
         with connect() as conn:
             with conn.cursor() as cur:
                 cur.execute("SELECT 1 FROM users WHERE email = %s", (email,))
-                if not cur.fetchone():
-                    return False, "No account with that email."
-                cur.execute(
-                    "UPDATE users SET password_hash = %s WHERE email = %s",
-                    (_hash(new_password), email),
-                )
+                if cur.fetchone():
+                    cur.execute(
+                        "UPDATE users SET password_hash = %s WHERE email = %s",
+                        (_hash(new_password), email),
+                    )
+                else:
+                    from backend.config import settings
+                    if settings.auth_email and email == settings.auth_email.strip().lower():
+                        cur.execute(
+                            "INSERT INTO users (email, password_hash) VALUES (%s, %s)",
+                            (email, _hash(new_password)),
+                        )
+                    else:
+                        return False, "No account with that email."
             conn.commit()
         return True, "ok"
     except Exception as e:
@@ -155,9 +167,14 @@ def update_password(email: str, new_password: str) -> tuple[bool, str]:
 
 
 def exists(email: str) -> bool:
-    """Whether an account with this email exists."""
+    """Whether an account with this email exists (database or env-based admin)."""
     email = normalise_email(email)
-    if not email or not ensure_schema():
+    if not email:
+        return False
+    from backend.config import settings
+    if settings.auth_email and email == settings.auth_email.strip().lower():
+        return True
+    if not ensure_schema():
         return False
     try:
         with connect() as conn:
