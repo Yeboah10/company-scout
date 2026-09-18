@@ -1,6 +1,11 @@
+import re
+from urllib.parse import urlparse
+
 from backend.models.schemas import CompanyIdentity, SearchResult
 from backend.services.llm import LLMService
 from backend.services.search import SearchService
+
+_URL_RE = re.compile(r'^https?://', re.IGNORECASE)
 
 SYSTEM_PROMPT = """You are a company identification specialist. Given search results about a company query, identify the company and return structured JSON.
 
@@ -28,14 +33,30 @@ class CompanyResolver:
         self.llm = llm
 
     def resolve(self, query: str) -> tuple[CompanyIdentity, list[SearchResult]]:
-        search_results = self.search.search(f"{query} company official website", max_results=5)
+        is_url = bool(_URL_RE.match(query))
+
+        if is_url:
+            domain = urlparse(query).netloc.replace("www.", "")
+            search_query = f'site:{domain} OR "{domain}" company'
+            search_results = self.search.search(search_query, max_results=5)
+            if not search_results:
+                search_results = self.search.search(f"{domain} company", max_results=5)
+        else:
+            search_results = self.search.search(f"{query} company official website", max_results=5)
 
         snippets = "\n\n".join(
             f"Title: {r.title}\nURL: {r.url}\nSnippet: {r.snippet}"
             for r in search_results
         )
 
-        user_prompt = f'Identify this company: "{query}"\n\nSearch results:\n{snippets}'
+        if is_url:
+            user_prompt = (
+                f'Identify the company at this URL: {query}\n'
+                f'Domain: {urlparse(query).netloc}\n\n'
+                f'Search results:\n{snippets}'
+            )
+        else:
+            user_prompt = f'Identify this company: "{query}"\n\nSearch results:\n{snippets}'
 
         data = self.llm.extract_structured(SYSTEM_PROMPT, user_prompt)
         identity = CompanyIdentity(**data)

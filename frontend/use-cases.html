@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Use cases — Company Scout</title>
+    <meta name="description" content="Who Company Scout is for, and how different people use it to save hours of research.">
+    <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Company Scout">
+    <meta property="og:title" content="Use cases — Company Scout">
+    <meta property="og:description" content="Who Company Scout is for, and how different people use it.">
+    <meta property="og:image" content="https://scout.yeboah.works/static/og-image.png">
+    <meta property="og:url" content="https://scout.yeboah.works/use-cases">
+
+    <link rel="stylesheet" href="/static/styles.css">
+    <script>
+        try {
+            var saved = localStorage.getItem('scout-theme');
+            if (saved === 'light' || saved === 'dark') {
+                document.documentElement.setAttribute('data-theme', saved);
+            }
+        } catch (e) {}
+    </script>
+</head>
+<body>
+    <div id="app">
+        <header class="header">
+            <div class="header-actions">
+                <button
+                    id="options-toggle"
+                    class="options-toggle"
+                    type="button"
+                    title="Options"
+                    aria-label="Options"
+                    aria-haspopup="true"
+                    aria-expanded="false"
+                >&#9881;</button>
+                <div id="options-menu" class="options-menu hidden" role="menu">
+                    <a class="options-item" role="menuitem" href="/about">
+                        <span class="options-icon">&#9432;</span>
+                        <span>
+                            How it works
+                            <small>What it does, and what it won&rsquo;t tell you</small>
+                        </span>
+                    </a>
+                    <a class="options-item" role="menuitem" href="/use-cases">
+                        <span class="options-icon">&#9733;</span>
+                        <span>
+                            Use cases
+                            <small>Who it&rsquo;s for and how they use it</small>
+                        </span>
+                    </a>
+                    <button class="options-item" role="menuitem" type="button" id="menu-theme">
+                        <span class="options-icon">&#9788;</span>
+                        <span id="menu-theme-label">Switch theme</span>
+                    </button>
+                    <a class="options-item" role="menuitem" href="/">
+                        <span class="options-icon">&#8592;</span>
+                        <span>Back to search</span>
+                    </a>
+                    <form method="post" action="/logout" class="options-signout">
+                        <button class="options-item" role="menuitem" type="submit">
+                            <span class="options-icon">&#8631;</span>
+                            <span>Sign out</span>
+                        </button>
+                    </form>
+                </div>
+            </div>
+            <a class="brand brand-compact" href="/">
+                <span class="brand-mark brand-mark-red"></span>
+                <span class="brand-mark brand-mark-amber"></span>
+                <span class="brand-name">Company Scout</span>
+            </a>
+            <h1 class="logo">Use cases</h1>
+            <p class="tagline">Who Company Scout is for, and what it helps them do.</p>
+        </header>
+
+        <div class="prose">
+            <section class="section">
+                <h3>The problem everyone shares</h3>
+                <p>
+                    You need to know whether a company is worth your time. Not a
+                    Wikipedia summary. Not a chatbot guess. An honest answer,
+                    backed by sources you can check, that includes what the
+                    public record does <em>not</em> say.
+                </p>
+                <p>
+                    That answer normally takes 2&ndash;3 hours of manual work:
+                    searching across news, company sites, LinkedIn, funding databases,
+                    and investor portals. Company Scout does it in minutes.
+                </p>
+            </section>
+
+            <section class="section">
+                <h3>Case writers and business school faculty</h3>
+                <div class="use-grid">
+                    <div class="use-card">
+                        <h4>Find case-worthy companies</h4>
+                        <p>
+                            The case study score tells you whether a company has the
+                            strategic decision, tension, and consequences that make a
+                            teaching case work. Companies that do not score well on
+                            this are filtered out before you spend a day researching them.
+                        </p>
+                    </div>
+                    <div class="use-card">
+                        <h4>Identify the protagonist</h4>
+                        <p>
+                            The People tab shows who runs the company, whether their
+                            role is current or former, and the best route to reach
+                            them. A case needs a decision-maker &mdash; not just a
+                            company.
+                        </p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section">
+                <h3>Journalists and content strategists</h3>
+                <div class="use-grid">
+                    <div class="use-card">
+                        <h4>Decide what to write about</h4>
+                        <p>
+                            The story potential score and the signal ledger tell you
+                            whether there is a real story here &mdash; a development
+                            worth covering, a trajectory worth following, a question
+                            worth answering &mdash; or just a company doing fine
+                            without needing an article about it.
+                        </p>
+                    </div>
+                    <div class="use-card">
+                        <h4>Get the contacts before pitching</h4>
+                        <p>
+                            Published email addresses, inferred addresses built from
+                            real patterns at the company, and LinkedIn profiles. Each
+                            contact says what it rests on, so you know what to trust.
+                        </p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section">
+                <h3>Business analysts and consultants</h3>
+                <div class="use-grid">
+                    <div class="use-card">
+                        <h4>Research a company before a meeting</h4>
+                        <p>
+                            The intelligence brief gives you the company&rsquo;s
+                            recent developments, strategic signals, and gaps in the
+                            public record &mdash; the things you need to know that
+                            the company&rsquo;s own website will not tell you.
+                        </p>
+                    </div>
+                    <div class="use-card">
+                        <h4>Compare opportunities</h4>
+                        <p>
+                            Scout several companies and compare their scores side by
+                            side. A company with a high attention score and a low
+                            reachability score is a different kind of opportunity from
+                            one where both are high.
+                        </p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section">
+                <h3>Investors and venture scouts</h3>
+                <div class="use-grid">
+                    <div class="use-card">
+                        <h4>Quick-screen a deal</h4>
+                        <p>
+                            Before spending time on a deep dive, get a brief that
+                            tells you what is publicly known, what is missing, and
+                            whether there are signals worth following up on. The
+                            coverage report shows exactly which research areas
+                            came back empty.
+                        </p>
+                    </div>
+                    <div class="use-card">
+                        <h4>Verify claims</h4>
+                        <p>
+                            Every claim in the brief traces to a dated, quality-rated
+                            source. A company that claims a Series A but has no
+                            source beyond its own press release looks different from
+                            one confirmed by a tier-1 outlet.
+                        </p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section">
+                <h3>Academic researchers</h3>
+                <div class="use-grid">
+                    <div class="use-card">
+                        <h4>Identify research subjects</h4>
+                        <p>
+                            The research potential score rates how much information
+                            is available, whether there are unresolved questions, and
+                            whether the company is complex enough to study. A high
+                            score means there is enough material for a paper.
+                        </p>
+                    </div>
+                    <div class="use-card">
+                        <h4>Map the gaps</h4>
+                        <p>
+                            The coverage report shows which of nine research areas
+                            came back empty. Gaps are research opportunities, not
+                            failures &mdash; a company with no public data on its
+                            business model is a question someone should answer.
+                        </p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section">
+                <h3>What it is not</h3>
+                <p>
+                    Company Scout is not a CRM, a lead generator, a content
+                    engine, or a substitute for talking to people. It is the step
+                    before all of those: the thing that tells you whether a
+                    company deserves your next three hours. What you do with that
+                    answer is your call.
+                </p>
+            </section>
+
+            <section class="section cta-section">
+                <a href="/" class="cta-link">Scout a company &rarr;</a>
+            </section>
+        </div>
+    </div>
+
+    <script>
+        var toggle = document.getElementById('options-toggle');
+        var menu = document.getElementById('options-menu');
+        toggle.addEventListener('click', function () {
+            var open = !menu.classList.contains('hidden');
+            menu.classList.toggle('hidden');
+            toggle.setAttribute('aria-expanded', !open);
+        });
+        document.addEventListener('click', function (e) {
+            if (!toggle.contains(e.target) && !menu.contains(e.target)) {
+                menu.classList.add('hidden');
+                toggle.setAttribute('aria-expanded', 'false');
+            }
+        });
+        var themeBtn = document.getElementById('menu-theme');
+        if (themeBtn) {
+            themeBtn.addEventListener('click', function () {
+                var current = document.documentElement.getAttribute('data-theme');
+                var next = current === 'dark' ? 'light' : 'dark';
+                document.documentElement.setAttribute('data-theme', next);
+                try { localStorage.setItem('scout-theme', next); } catch (e) {}
+            });
+        }
+    </script>
+</body>
+</html>

@@ -103,6 +103,7 @@ async function scoutCompany(query, { force = false } = {}) {
         renderBrief(data.brief);
         hideLoading();
         showResults();
+        if (currentShareKey && typeof loadNotes === 'function') loadNotes(currentShareKey);
 
     } catch (err) {
         clearTimeout(patienceTimeout);
@@ -206,6 +207,11 @@ async function copyShareLink() {
 function downloadMarkdown() {
     if (!currentShareKey) return;
     window.location.href = `/report/${currentShareKey}.md`;
+}
+
+function exportPDF() {
+    if (!currentShareKey) return;
+    window.open(`/report/${currentShareKey}.pdf`, '_blank');
 }
 
 // Runs the currently-open company again from scratch, ignoring the saved
@@ -370,6 +376,7 @@ async function loadSharedReport() {
         renderBrief(data.brief);
         hideLoading();
         showResults();
+        if (currentShareKey && typeof loadNotes === 'function') loadNotes(currentShareKey);
     } catch (err) {
         hideLoading();
         showError(err.message);
@@ -378,8 +385,13 @@ async function loadSharedReport() {
 
 loadSharedReport();
 
+// Comparison view: /compare?a=KEY1&b=KEY2
+if (/^\/compare/.test(window.location.pathname) && typeof loadComparison === 'function') {
+    loadComparison();
+}
+
 // Only worth showing on the home page; a shared report replaces this view.
-if (!/^\/r\//.test(window.location.pathname)) {
+if (!/^\/r\//.test(window.location.pathname) && !/^\/compare/.test(window.location.pathname)) {
     loadPipelineStages();
     loadRecent();
     loadCapacity();
