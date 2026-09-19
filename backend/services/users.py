@@ -185,6 +185,37 @@ def exists(email: str) -> bool:
         return False
 
 
+def find_or_create_oauth(email: str) -> tuple[bool, str]:
+    """Ensure an account exists for this email, creating one if needed.
+
+    Used by OAuth flows where the identity provider already verified the
+    address. No password is set — the user signs in via Google, not a
+    form. If the account already exists (from a regular signup or a
+    previous OAuth login), it is left unchanged.
+    """
+    email = normalise_email(email)
+    if not valid_email(email):
+        return False, "Invalid email from provider."
+    if not ensure_schema():
+        return False, "The database is unreachable."
+
+    try:
+        with connect() as conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT 1 FROM users WHERE email = %s", (email,))
+                if cur.fetchone():
+                    return True, "ok"
+                cur.execute(
+                    "INSERT INTO users (email, password_hash) VALUES (%s, %s)",
+                    (email, "oauth"),
+                )
+            conn.commit()
+        return True, "ok"
+    except Exception as e:
+        print(f"[users] OAuth find_or_create failed: {e}", flush=True)
+        return False, "Could not create the account."
+
+
 def summary(limit: int = 10) -> dict:
     """Account count and the most recent signups, for the admin usage page.
 

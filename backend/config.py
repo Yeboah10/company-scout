@@ -73,6 +73,10 @@ class Settings(BaseSettings):
     # restarts often.
     session_secret: str = ""
 
+    # Google OAuth. Off unless both are set.
+    google_client_id: str = ""
+    google_client_secret: str = ""
+
     # Exa — the search fallback, used only once Tavily's monthly plan is
     # spent. Same relationship as Groq has to Gemini: never competing for a
     # call, only catching the one that would otherwise fail. Off unless a key

@@ -1946,6 +1946,46 @@ body {
     background: var(--accent-hover);
 }
 
+.login-divider {
+    display: flex;
+    align-items: center;
+    margin: 20px 0 16px;
+    gap: 12px;
+    color: var(--muted);
+    font-size: 13px;
+}
+.login-divider::before,
+.login-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+}
+
+.google-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    padding: 10px 16px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text);
+    background: var(--raised);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+.google-btn:hover {
+    background: var(--surface);
+}
+.google-icon {
+    flex-shrink: 0;
+}
+
 .login-error {
     margin-top: 16px;
     padding: 10px 12px;

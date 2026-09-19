@@ -1,11 +1,13 @@
 import hmac
+import secrets
 import time
 import traceback
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
-from urllib.parse import quote
+from urllib.parse import quote, urlencode
 
+import httpx
 from fastapi import FastAPI, Form, HTTPException, Request
 from fastapi.responses import (
     FileResponse,
@@ -64,7 +66,7 @@ PUBLIC_PREFIXES = ("/static/", "/r/", "/report/", "/compare")
 PUBLIC_PATHS = {
     "/login", "/signup", "/logout", "/health", "/about", "/favicon.ico",
     "/usage", "/usage-page", "/forgot-password", "/reset-password",
-    "/use-cases",
+    "/use-cases", "/auth/google", "/auth/google/callback",
 }
 
 
@@ -600,6 +602,115 @@ async def signup_submit(
     response.set_cookie(
         auth.COOKIE_NAME,
         auth.issue(users.normalise_email(email)),
+        max_age=auth.SESSION_MAX_AGE,
+        httponly=True,
+        samesite="lax",
+        secure=True,
+    )
+    return response
+
+
+_GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth"
+_GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token"
+_GOOGLE_USERINFO_URL = "https://www.googleapis.com/oauth2/v2/userinfo"
+_oauth_states: dict[str, tuple[float, str]] = {}
+
+
+def _google_oauth_enabled() -> bool:
+    return bool(settings.google_client_id and settings.google_client_secret)
+
+
+@app.get("/auth/google")
+async def google_login(request: Request):
+    if not _google_oauth_enabled():
+        return RedirectResponse("/login?error=1", status_code=303)
+
+    state = secrets.token_urlsafe(32)
+    next_url = request.query_params.get("next", "/")
+    if not next_url.startswith("/") or next_url.startswith("//"):
+        next_url = "/"
+    _oauth_states[state] = (time.time(), next_url)
+
+    # Housekeeping: drop states older than 10 minutes.
+    cutoff = time.time() - 600
+    for k in [k for k, (t, _) in _oauth_states.items() if t < cutoff]:
+        _oauth_states.pop(k, None)
+
+    scheme = request.headers.get("x-forwarded-proto", "https")
+    host = request.headers.get("host", "scout.yeboah.works")
+    redirect_uri = f"{scheme}://{host}/auth/google/callback"
+
+    params = {
+        "client_id": settings.google_client_id,
+        "redirect_uri": redirect_uri,
+        "response_type": "code",
+        "scope": "openid email",
+        "state": state,
+        "prompt": "select_account",
+    }
+    return RedirectResponse(f"{_GOOGLE_AUTH_URL}?{urlencode(params)}", status_code=303)
+
+
+@app.get("/auth/google/callback")
+async def google_callback(request: Request):
+    if not _google_oauth_enabled():
+        return RedirectResponse("/login?error=1", status_code=303)
+
+    error = request.query_params.get("error")
+    if error:
+        return RedirectResponse("/login?error=Google+sign-in+was+cancelled", status_code=303)
+
+    code = request.query_params.get("code", "")
+    state = request.query_params.get("state", "")
+
+    stored = _oauth_states.pop(state, None)
+    if not stored or time.time() - stored[0] > 600:
+        return RedirectResponse("/login?error=Sign-in+expired.+Please+try+again.", status_code=303)
+
+    next_url = stored[1]
+
+    scheme = request.headers.get("x-forwarded-proto", "https")
+    host = request.headers.get("host", "scout.yeboah.works")
+    redirect_uri = f"{scheme}://{host}/auth/google/callback"
+
+    try:
+        async with httpx.AsyncClient() as client:
+            token_resp = await client.post(_GOOGLE_TOKEN_URL, data={
+                "code": code,
+                "client_id": settings.google_client_id,
+                "client_secret": settings.google_client_secret,
+                "redirect_uri": redirect_uri,
+                "grant_type": "authorization_code",
+            })
+            if token_resp.status_code != 200:
+                return RedirectResponse("/login?error=Google+sign-in+failed", status_code=303)
+            tokens = token_resp.json()
+
+            userinfo_resp = await client.get(
+                _GOOGLE_USERINFO_URL,
+                headers={"Authorization": f"Bearer {tokens['access_token']}"},
+            )
+            if userinfo_resp.status_code != 200:
+                return RedirectResponse("/login?error=Could+not+read+your+Google+account", status_code=303)
+            userinfo = userinfo_resp.json()
+    except Exception:
+        return RedirectResponse("/login?error=Google+sign-in+failed", status_code=303)
+
+    email = (userinfo.get("email") or "").strip().lower()
+    if not email:
+        return RedirectResponse("/login?error=No+email+from+Google", status_code=303)
+
+    ok, msg = users.find_or_create_oauth(email)
+    if not ok:
+        return RedirectResponse(f"/login?error={quote(msg)}", status_code=303)
+
+    mailer.send_welcome(email)
+
+    target = next_url if next_url.startswith("/") and not next_url.startswith("//") else "/"
+    response = RedirectResponse(target, status_code=303)
+    response.set_cookie(
+        auth.COOKIE_NAME,
+        auth.issue(email),
         max_age=auth.SESSION_MAX_AGE,
         httponly=True,
         samesite="lax",
