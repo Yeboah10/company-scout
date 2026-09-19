@@ -159,7 +159,9 @@
              turns a cache hit into the obvious next click. -->
         <div id="recent" class="recent hidden">
             <h2 class="recent-title">Recent scouts</h2>
+            <p class="recent-hint">Select two to compare them side by side.</p>
             <div class="recent-head">
+                <span></span>
                 <span>Company</span>
                 <span>Attention</span>
                 <span>Reach</span>
@@ -167,6 +169,10 @@
                 <span></span>
             </div>
             <div id="recent-list" class="recent-list"></div>
+            <div id="compare-bar" class="compare-bar hidden">
+                <span id="compare-count">0 selected</span>
+                <button id="compare-go" class="compare-go" disabled onclick="goCompare()">Compare</button>
+            </div>
         </div>
 
         <!-- Loading -->

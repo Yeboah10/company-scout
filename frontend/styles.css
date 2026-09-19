@@ -2168,12 +2168,27 @@ body {
     padding: 34px 0 0;
 }
 
-.recent-head,
+.recent-head {
+    display: grid;
+    grid-template-columns: 28px 1fr 92px 92px 190px 70px;
+    align-items: center;
+    gap: 16px;
+}
+
 .recent-card {
+    display: grid;
+    grid-template-columns: 28px 1fr;
+    align-items: center;
+    gap: 0;
+}
+
+.recent-link {
     display: grid;
     grid-template-columns: 1fr 92px 92px 190px 70px;
     align-items: center;
     gap: 16px;
+    text-decoration: none;
+    color: var(--ink);
 }
 
 .recent-head {
@@ -2186,8 +2201,8 @@ body {
     color: var(--ink-45);
 }
 
-.recent-head span:nth-child(2),
-.recent-head span:nth-child(3) { text-align: right; }
+.recent-head span:nth-child(3),
+.recent-head span:nth-child(4) { text-align: right; }
 
 .recent-list {
     display: block;
@@ -2237,15 +2252,64 @@ body {
     color: var(--accent-text);
 }
 
+.recent-hint {
+    font-size: 12px;
+    color: var(--ink-45);
+    margin: -4px 0 12px;
+}
+
+.recent-check-label {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.recent-check {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--accent);
+    cursor: pointer;
+}
+
+.compare-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 0;
+    margin-top: 8px;
+    border-top: 1px solid var(--rule-soft);
+    font-size: 13px;
+    color: var(--ink-60);
+}
+
+.compare-go {
+    padding: 8px 20px;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    font-weight: 700;
+    font-family: Archivo, Arial, sans-serif;
+    font-size: 13px;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+
+.compare-go:disabled {
+    opacity: 0.4;
+    cursor: default;
+}
+
 @media (max-width: 860px) {
     #app { padding: 0 20px 40px; }
     .action-row { grid-template-columns: repeat(2, 1fr); }
     .action-cell { border-bottom: 1px solid var(--rule-soft); }
     .action-cell:first-child { padding-left: 22px; }
     .recent-head { display: none; }
-    .recent-card { grid-template-columns: 1fr auto auto; }
-    .recent-card .recent-verdict,
-    .recent-card .recent-open { display: none; }
+    .recent-card { grid-template-columns: 28px 1fr; }
+    .recent-link { grid-template-columns: 1fr auto auto; }
+    .recent-link .recent-verdict,
+    .recent-link .recent-open { display: none; }
 }
 
 /* Compact brand mark for pages that are not the homepage. Centered, small,

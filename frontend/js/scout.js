@@ -332,19 +332,22 @@ async function loadRecent() {
     const wrap = document.getElementById('recent');
     if (!list || !wrap) return;
 
-    // A row per company: name, the two scores, the verdict, and a way in.
-    // Scores are right-aligned and tabular so the column reads as a column.
     list.innerHTML = items.map(item => `
-        <a class="recent-card" href="/r/${encodeURIComponent(item.key)}">
-            <span>
-                <span class="recent-name">${escapeHtml(item.name || item.key)}</span>
-                ${item.country ? `<br><span class="recent-country">${escapeHtml(item.country)}</span>` : ''}
-            </span>
-            <span class="recent-score">${item.interest != null ? escapeHtml(item.interest) : '&mdash;'}</span>
-            <span class="recent-score">${item.reach != null ? escapeHtml(item.reach) : '&mdash;'}</span>
-            <span class="recent-verdict">${escapeHtml(item.verdict || '')}</span>
-            <span class="recent-open">Open &rarr;</span>
-        </a>
+        <div class="recent-card">
+            <label class="recent-check-label" onclick="event.stopPropagation()">
+                <input type="checkbox" class="recent-check" data-key="${escapeHtml(item.key)}" onchange="updateCompareBar()">
+            </label>
+            <a class="recent-link" href="/r/${encodeURIComponent(item.key)}">
+                <span>
+                    <span class="recent-name">${escapeHtml(item.name || item.key)}</span>
+                    ${item.country ? `<br><span class="recent-country">${escapeHtml(item.country)}</span>` : ''}
+                </span>
+                <span class="recent-score">${item.interest != null ? escapeHtml(item.interest) : '&mdash;'}</span>
+                <span class="recent-score">${item.reach != null ? escapeHtml(item.reach) : '&mdash;'}</span>
+                <span class="recent-verdict">${escapeHtml(item.verdict || '')}</span>
+                <span class="recent-open">Open &rarr;</span>
+            </a>
+        </div>
     `).join('');
 
     wrap.classList.remove('hidden');
@@ -384,6 +387,40 @@ async function loadSharedReport() {
 }
 
 loadSharedReport();
+
+// ---------- Compare picker ----------
+
+function updateCompareBar() {
+    const checked = document.querySelectorAll('.recent-check:checked');
+    const bar = document.getElementById('compare-bar');
+    const countEl = document.getElementById('compare-count');
+    const btn = document.getElementById('compare-go');
+    if (!bar) return;
+
+    if (checked.length > 2) {
+        // Uncheck the oldest selection so only two are ever active.
+        checked[0].checked = false;
+        return updateCompareBar();
+    }
+
+    if (checked.length > 0) {
+        bar.classList.remove('hidden');
+        countEl.textContent = checked.length === 1
+            ? '1 selected — pick one more'
+            : '2 selected';
+        btn.disabled = checked.length !== 2;
+    } else {
+        bar.classList.add('hidden');
+    }
+}
+
+function goCompare() {
+    const checked = document.querySelectorAll('.recent-check:checked');
+    if (checked.length !== 2) return;
+    const a = checked[0].dataset.key;
+    const b = checked[1].dataset.key;
+    window.location.href = `/compare?a=${encodeURIComponent(a)}&b=${encodeURIComponent(b)}`;
+}
 
 // Comparison view: /compare?a=KEY1&b=KEY2
 if (/^\/compare/.test(window.location.pathname) && typeof loadComparison === 'function') {
