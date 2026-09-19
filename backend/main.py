@@ -67,6 +67,7 @@ PUBLIC_PATHS = {
     "/login", "/signup", "/logout", "/health", "/about", "/favicon.ico",
     "/usage", "/usage-page", "/forgot-password", "/reset-password",
     "/use-cases", "/auth/google", "/auth/google/callback",
+    "/privacy", "/terms",
 }
 
 
@@ -793,6 +794,16 @@ async def reset_password_submit(request: Request):
 @app.get("/use-cases")
 async def use_cases_page():
     return FileResponse(str(FRONTEND_DIR / "use-cases.html"))
+
+
+@app.get("/privacy")
+async def privacy_page():
+    return FileResponse(str(FRONTEND_DIR / "privacy.html"))
+
+
+@app.get("/terms")
+async def terms_page():
+    return FileResponse(str(FRONTEND_DIR / "terms.html"))
 
 
 @app.post("/logout")

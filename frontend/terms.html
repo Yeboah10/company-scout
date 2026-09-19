@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Terms of Service — Company Scout</title>
+    <meta name="robots" content="noindex">
+    <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="/static/styles.css">
+    <script>
+        try {
+            var saved = localStorage.getItem('scout-theme');
+            if (saved === 'light' || saved === 'dark') {
+                document.documentElement.setAttribute('data-theme', saved);
+            }
+        } catch (e) {}
+    </script>
+</head>
+<body>
+    <div id="app">
+        <header class="header">
+            <div class="header-actions">
+                <button
+                    id="options-toggle"
+                    class="options-toggle"
+                    type="button"
+                    title="Options"
+                    aria-label="Options"
+                    aria-haspopup="true"
+                    aria-expanded="false"
+                >&#9881;</button>
+                <div id="options-menu" class="options-menu hidden" role="menu">
+                    <a class="options-item" role="menuitem" href="/about">
+                        <span class="options-icon">&#9432;</span>
+                        <span>
+                            How it works
+                            <small>What it does, and what it won&rsquo;t tell you</small>
+                        </span>
+                    </a>
+                    <a class="options-item" role="menuitem" href="/use-cases">
+                        <span class="options-icon">&#9733;</span>
+                        <span>
+                            Use cases
+                            <small>Who it&rsquo;s for and how they use it</small>
+                        </span>
+                    </a>
+                    <button class="options-item" role="menuitem" type="button" id="menu-theme">
+                        <span class="options-icon">&#9788;</span>
+                        <span id="menu-theme-label">Switch theme</span>
+                    </button>
+                    <a class="options-item" role="menuitem" href="/">
+                        <span class="options-icon">&#8592;</span>
+                        <span>Back to search</span>
+                    </a>
+                    <form method="post" action="/logout" class="options-signout">
+                        <button class="options-item" role="menuitem" type="submit">
+                            <span class="options-icon">&#8631;</span>
+                            <span>Sign out</span>
+                        </button>
+                    </form>
+                </div>
+            </div>
+            <a class="brand brand-compact" href="/">
+                <span class="brand-mark brand-mark-red"></span>
+                <span class="brand-mark brand-mark-amber"></span>
+                <span class="brand-name">Company Scout</span>
+            </a>
+            <h1 class="logo">Terms of Service</h1>
+            <p class="tagline">Last updated: September 2026</p>
+        </header>
+
+        <div class="prose">
+            <section class="section">
+                <h3>What this is</h3>
+                <p>
+                    Company Scout is a free research tool. By using it, you
+                    agree to these terms.
+                </p>
+            </section>
+
+            <section class="section">
+                <h3>The service</h3>
+                <p>
+                    Company Scout produces AI-generated research briefs on
+                    companies. The briefs are based on publicly available
+                    information found through web search, processed by AI
+                    models. The tool is provided as-is, free of charge.
+                </p>
+            </section>
+
+            <section class="section">
+                <h3>No guarantees</h3>
+                <ul class="limits-list">
+                    <li>
+                        <strong>Not advice.</strong> Briefs are research
+                        shortcuts, not financial, legal, or investment advice.
+                        Do not make business decisions based solely on a
+                        Company Scout report.
+                    </li>
+                    <li>
+                        <strong>Accuracy.</strong> The AI can make mistakes.
+                        Every claim cites its source so you can verify it
+                        yourself. Inferred contact details are guesses and are
+                        labelled as such.
+                    </li>
+                    <li>
+                        <strong>Availability.</strong> The service runs on free
+                        infrastructure with daily limits. It may be slow,
+                        temporarily unavailable, or reach its daily quota.
+                        There is no uptime guarantee.
+                    </li>
+                </ul>
+            </section>
+
+            <section class="section">
+                <h3>Your account</h3>
+                <p>
+                    You can sign up with an email and password, or sign in
+                    with Google. You are responsible for keeping your
+                    credentials secure. One account per person.
+                </p>
+            </section>
+
+            <section class="section">
+                <h3>Acceptable use</h3>
+                <p>
+                    Do not use Company Scout to harass, stalk, or spam people
+                    whose contact details appear in a brief. Do not
+                    deliberately exhaust the daily quota to prevent others
+                    from using the tool. Do not attempt to access other
+                    users' accounts or data.
+                </p>
+            </section>
+
+            <section class="section">
+                <h3>Shared reports</h3>
+                <p>
+                    Share links are public. Anyone with the link can read the
+                    brief. You are responsible for who you share a link with.
+                </p>
+            </section>
+
+            <section class="section">
+                <h3>Changes</h3>
+                <p>
+                    These terms may change. Continued use after a change means
+                    you accept the new terms. Major changes will be noted on
+                    this page with an updated date.
+                </p>
+            </section>
+
+            <section class="section">
+                <h3>Contact</h3>
+                <p>
+                    Questions? Email
+                    <a href="mailto:acquahyeboah01@gmail.com">acquahyeboah01@gmail.com</a>.
+                </p>
+            </section>
+
+            <div class="about-actions">
+                <a class="scout-btn about-cta" href="/">Back to search</a>
+            </div>
+        </div>
+    </div>
+
+    <footer class="site-footer">
+        <a class="footer-link" href="/">Home</a>
+    </footer>
+
+    <script src="/static/js/core.js"></script>
+    <script src="/static/js/theme.js"></script>
+    <script src="/static/js/menu.js"></script>
+</body>
+</html>
