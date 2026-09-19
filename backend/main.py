@@ -141,6 +141,8 @@ usage.attach_store(cache.backend)
 # the deploy log, not three minutes into somebody's research run.
 store.ensure_schema()
 
+print(f"[startup] Google OAuth: {'enabled' if (settings.google_client_id and settings.google_client_secret) else 'OFF — set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET'}", flush=True)
+
 
 def _run_job(job_id: str, query: str, force: bool = False) -> None:
     """Run a scout to completion, recording progress against the job.
@@ -623,7 +625,12 @@ def _google_oauth_enabled() -> bool:
 @app.get("/auth/google")
 async def google_login(request: Request):
     if not _google_oauth_enabled():
-        return RedirectResponse("/login?error=1", status_code=303)
+        print(f"[oauth] Google OAuth not enabled. client_id set: {bool(settings.google_client_id)}, "
+              f"client_secret set: {bool(settings.google_client_secret)}", flush=True)
+        return RedirectResponse(
+            "/login?error=" + quote("Google sign-in is not set up yet."),
+            status_code=303,
+        )
 
     state = secrets.token_urlsafe(32)
     next_url = request.query_params.get("next", "/")
@@ -654,7 +661,10 @@ async def google_login(request: Request):
 @app.get("/auth/google/callback")
 async def google_callback(request: Request):
     if not _google_oauth_enabled():
-        return RedirectResponse("/login?error=1", status_code=303)
+        return RedirectResponse(
+            "/login?error=" + quote("Google sign-in is not set up yet."),
+            status_code=303,
+        )
 
     error = request.query_params.get("error")
     if error:
@@ -683,7 +693,11 @@ async def google_callback(request: Request):
                 "grant_type": "authorization_code",
             })
             if token_resp.status_code != 200:
-                return RedirectResponse("/login?error=Google+sign-in+failed", status_code=303)
+                print(f"[oauth] Token exchange failed: {token_resp.status_code} {token_resp.text[:300]}", flush=True)
+                return RedirectResponse(
+                    "/login?error=" + quote("Google sign-in failed. Please try again."),
+                    status_code=303,
+                )
             tokens = token_resp.json()
 
             userinfo_resp = await client.get(
@@ -691,10 +705,18 @@ async def google_callback(request: Request):
                 headers={"Authorization": f"Bearer {tokens['access_token']}"},
             )
             if userinfo_resp.status_code != 200:
-                return RedirectResponse("/login?error=Could+not+read+your+Google+account", status_code=303)
+                print(f"[oauth] Userinfo failed: {userinfo_resp.status_code}", flush=True)
+                return RedirectResponse(
+                    "/login?error=" + quote("Could not read your Google account."),
+                    status_code=303,
+                )
             userinfo = userinfo_resp.json()
-    except Exception:
-        return RedirectResponse("/login?error=Google+sign-in+failed", status_code=303)
+    except Exception as exc:
+        print(f"[oauth] Exception during Google sign-in: {exc}", flush=True)
+        return RedirectResponse(
+            "/login?error=" + quote("Google sign-in failed. Please try again."),
+            status_code=303,
+        )
 
     email = (userinfo.get("email") or "").strip().lower()
     if not email:
@@ -852,8 +874,7 @@ async def health():
     return {
         "status": "ok",
         "monitoring": monitoring.is_enabled(),
-        # Configured and working are different facts, and only the second one
-        # predicts whether the next write succeeds.
         "database": db.status(),
         "auth": "enabled" if auth.is_enabled() else "open",
+        "google_oauth": "enabled" if _google_oauth_enabled() else "off",
     }
