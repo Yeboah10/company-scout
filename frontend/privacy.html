@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Privacy Policy — Company Scout</title>
+    <meta name="robots" content="noindex">
+    <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="/static/styles.css">
+    <script>
+        try {
+            var saved = localStorage.getItem('scout-theme');
+            if (saved === 'light' || saved === 'dark') {
+                document.documentElement.setAttribute('data-theme', saved);
+            }
+        } catch (e) {}
+    </script>
+</head>
+<body>
+    <div id="app">
+        <header class="header">
+            <div class="header-actions">
+                <button
+                    id="options-toggle"
+                    class="options-toggle"
+                    type="button"
+                    title="Options"
+                    aria-label="Options"
+                    aria-haspopup="true"
+                    aria-expanded="false"
+                >&#9881;</button>
+                <div id="options-menu" class="options-menu hidden" role="menu">
+                    <a class="options-item" role="menuitem" href="/about">
+                        <span class="options-icon">&#9432;</span>
+                        <span>
+                            How it works
+                            <small>What it does, and what it won&rsquo;t tell you</small>
+                        </span>
+                    </a>
+                    <a class="options-item" role="menuitem" href="/use-cases">
+                        <span class="options-icon">&#9733;</span>
+                        <span>
+                            Use cases
+                            <small>Who it&rsquo;s for and how they use it</small>
+                        </span>
+                    </a>
+                    <button class="options-item" role="menuitem" type="button" id="menu-theme">
+                        <span class="options-icon">&#9788;</span>
+                        <span id="menu-theme-label">Switch theme</span>
+                    </button>
+                    <a class="options-item" role="menuitem" href="/">
+                        <span class="options-icon">&#8592;</span>
+                        <span>Back to search</span>
+                    </a>
+                    <form method="post" action="/logout" class="options-signout">
+                        <button class="options-item" role="menuitem" type="submit">
+                            <span class="options-icon">&#8631;</span>
+                            <span>Sign out</span>
+                        </button>
+                    </form>
+                </div>
+            </div>
+            <a class="brand brand-compact" href="/">
+                <span class="brand-mark brand-mark-red"></span>
+                <span class="brand-mark brand-mark-amber"></span>
+                <span class="brand-name">Company Scout</span>
+            </a>
+            <h1 class="logo">Privacy Policy</h1>
+            <p class="tagline">Last updated: September 2026</p>
+        </header>
+
+        <div class="prose">
+            <section class="section">
+                <h3>What Company Scout is</h3>
+                <p>
+                    Company Scout is a free research tool that produces
+                    evidence-backed briefs on African companies. It is operated
+                    by an individual developer, not a registered company.
+                </p>
+            </section>
+
+            <section class="section">
+                <h3>What we collect</h3>
+                <ul class="limits-list">
+                    <li>
+                        <strong>Account information.</strong> Your email address
+                        when you sign up or sign in with Google. We use it only
+                        to identify your session. We do not sell or share it
+                        with anyone.
+                    </li>
+                    <li>
+                        <strong>Search queries.</strong> The company names you
+                        search for are sent to third-party search and AI
+                        services (Google Gemini, Tavily) to produce the
+                        research brief. We do not log your queries beyond what
+                        is needed to cache the report.
+                    </li>
+                    <li>
+                        <strong>Cached reports.</strong> Finished briefs are
+                        cached so repeat lookups are instant. Cache entries
+                        expire after seven days.
+                    </li>
+                    <li>
+                        <strong>No tracking or analytics.</strong> We do not use
+                        cookies for tracking, do not run analytics scripts, and
+                        do not collect browsing behaviour. The only cookie is
+                        your signed session token.
+                    </li>
+                </ul>
+            </section>
+
+            <section class="section">
+                <h3>Google sign-in</h3>
+                <p>
+                    If you sign in with Google, we receive your email address
+                    from Google. We do not access your contacts, calendar,
+                    drive, or any other Google data. We request only the
+                    <code>openid</code> and <code>email</code> permissions.
+                </p>
+            </section>
+
+            <section class="section">
+                <h3>Third-party services</h3>
+                <p>
+                    Research queries are processed by Google Gemini (AI analysis)
+                    and Tavily (web search). These services receive the company
+                    name you searched for. Their own privacy policies apply to
+                    how they handle that data.
+                </p>
+            </section>
+
+            <section class="section">
+                <h3>Shared reports</h3>
+                <p>
+                    When you share a report link (<code>/r/...</code>), anyone
+                    with that link can read the brief without signing in. That
+                    is the point of sharing. Do not share a link if you do not
+                    want others to see the report.
+                </p>
+            </section>
+
+            <section class="section">
+                <h3>Data storage</h3>
+                <p>
+                    Data is stored on Render (hosting), Render Key Value (cache),
+                    and Render Postgres (accounts and reports). All are hosted
+                    in the United States. We do not transfer data to any other
+                    parties.
+                </p>
+            </section>
+
+            <section class="section">
+                <h3>Deleting your data</h3>
+                <p>
+                    To delete your account and data, email
+                    <a href="mailto:acquahyeboah01@gmail.com">acquahyeboah01@gmail.com</a>
+                    and we will remove it.
+                </p>
+            </section>
+
+            <section class="section">
+                <h3>Contact</h3>
+                <p>
+                    Questions about this policy? Email
+                    <a href="mailto:acquahyeboah01@gmail.com">acquahyeboah01@gmail.com</a>.
+                </p>
+            </section>
+
+            <div class="about-actions">
+                <a class="scout-btn about-cta" href="/">Back to search</a>
+            </div>
+        </div>
+    </div>
+
+    <footer class="site-footer">
+        <a class="footer-link" href="/">Home</a>
+    </footer>
+
+    <script src="/static/js/core.js"></script>
+    <script src="/static/js/theme.js"></script>
+    <script src="/static/js/menu.js"></script>
+</body>
+</html>
