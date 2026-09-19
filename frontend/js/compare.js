@@ -53,22 +53,38 @@ function renderComparison(dataA, dataB) {
 
 function renderCompanyColumn(brief, shareKey) {
     const company = brief.evidence?.company || {};
-    const scores = brief.scores || {};
-    const rec = getRecommendation(scores);
-    const badgeClass = getBadgeClass(rec);
+    const scores = brief.analysis?.scores || {};
+    const verdict = brief.verdict || scores.recommendation || 'SKIP';
 
+    const interest = brief.interest_score;
+    const reach = brief.reachability_score;
+    const summary = brief.analysis?.executive_summary || '';
     const signals = (brief.analysis?.signals || []).slice(0, 3);
     const gaps = (brief.evidence?.coverage?.gaps || []).slice(0, 3);
+
+    const verdictClass = verdict.includes('PURSUE') ? 'high'
+        : verdict.includes('WORTH') ? 'worth'
+        : verdict.includes('REACHABLE') ? 'low'
+        : 'skip';
 
     return `
         <div class="compare-column">
             <div class="compare-company">
                 <h3>${escapeHtml(company.name || 'Unknown')}</h3>
                 <span class="compare-country">${escapeHtml(company.country || '')}</span>
-                <span class="score-badge ${badgeClass}">${escapeHtml(rec)}</span>
+                <span class="score-badge ${verdictClass}">${escapeHtml(verdict)}</span>
             </div>
 
             <div class="compare-scores">
+                <div class="compare-score-row">
+                    <span class="compare-score-label">Attention</span>
+                    <span class="compare-score-value" style="color:${scoreColor(interest || 0)}">${interest ?? '—'}</span>
+                </div>
+                <div class="compare-score-row">
+                    <span class="compare-score-label">Reach</span>
+                    <span class="compare-score-value" style="color:${scoreColor(reach || 0)}">${reach ?? '—'}</span>
+                </div>
+                <div class="compare-score-divider"></div>
                 <div class="compare-score-row">
                     <span class="compare-score-label">Story</span>
                     <span class="compare-score-value" style="color:${scoreColor(scores.story_score || 0)}">${scores.story_score ?? '—'}</span>
@@ -85,15 +101,13 @@ function renderCompanyColumn(brief, shareKey) {
                     <span class="compare-score-label">Research</span>
                     <span class="compare-score-value" style="color:${scoreColor(scores.research_score || 0)}">${scores.research_score ?? '—'}</span>
                 </div>
-                <div class="compare-score-row compare-score-overall">
-                    <span class="compare-score-label">Overall</span>
-                    <span class="compare-score-value" style="color:${scoreColor(scores.overall_score || 0)}">${scores.overall_score ?? '—'}</span>
-                </div>
             </div>
 
-            <div class="compare-summary">
-                <p>${escapeHtml(brief.executive_summary || '')}</p>
-            </div>
+            ${summary ? `
+                <div class="compare-summary">
+                    <p>${escapeHtml(summary)}</p>
+                </div>
+            ` : ''}
 
             ${signals.length ? `
                 <div class="compare-signals">
